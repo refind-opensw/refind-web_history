@@ -10,6 +10,7 @@
     "permissions": [
         "activeTab",
         "storage",
+        "history",
         "<all_urls>"
     ]
 }
