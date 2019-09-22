@@ -7,11 +7,58 @@
     <script src="js/jquery-3.4.1.min.js"></script>
     <link rel="stylesheet" href="uilib/semantic_ui/semantic.min.css">
     <script src="uilib/semantic_ui/semantic.min.js"></script>
+    <link rel="stylesheet" href="uilib/semantic_ui/calendar.min.css">
+    <script src="uilib/semantic_ui/calendar.min.js"></script>
     <link rel="stylesheet" href="css/main.css">
+    <script src="js/commons.js"></script>
     <script src="js/main.js"></script>
     <title>찾아드림</title>
 </head>
 <body>
-    
+    <header>
+        <div>
+            <h2>대주제</h2>
+            <i class="cog icon large"></i>
+        </div>
+        <span class="search-date"><p class="s">0000.00.00</p>&nbsp;~&nbsp;<p class="e">0000.00.00</p></span>
+    </header>
+
+    <main>
+        <div class="ui ten cards">
+
+        </div>
+    </main>
+
+    <footer>
+        <div class="divider"></div>
+        <div id="searchbox" class="ui form">
+            <div class="three fields"> 
+                <div class="six wide field">
+                    <label>시작날짜</label>
+                    <div class="ui calendar" id="date_from">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <input type="text" name="date-from" placeholder="Date from">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="six wide field">
+                    <label>종료날짜</label>
+                    <div class="ui calendar" id="date_to">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <input type="text" name="date-to" placeholder="Date to">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="four wide field">
+                    <label>&nbsp;</label>
+                    <button id="action_search" class="ui primary button fluid">검색 및 분류</button>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

@@ -1,0 +1,69 @@
+html {
+    height: inherit;
+}
+
+body {
+    min-width: 768px;
+}
+
+header {
+    padding: 16px;
+}
+
+header > div {
+    display: flex;
+}
+
+header > div > .icon {
+    margin: 3px 0 0 auto;
+    color: #4e4e4e;
+    cursor: pointer;
+}
+
+header > div > .icon:hover{
+    color: #242424;
+}
+
+header > .search-date {
+    display: flex;
+    color: #5f5f5f;
+}
+
+main {
+    overflow-y: hidden;
+    overflow-x: auto;
+}
+
+main::-webkit-scrollbar {
+    display: none;
+}
+
+footer {
+
+}
+
+footer > .divider {
+    margin: 8px auto 16px auto;
+    width: calc(100% - 32px);
+    border-top: 1px solid #d4d4d5;
+}
+
+.ui.cards {
+    width: 220%;
+    padding: 16px;
+}
+
+.ui.card {
+    width: 108px;
+}
+
+.ui.card .content img, .ui.cards > .card .content img  {
+    margin: 0 auto 0 auto;
+    display: flex;
+}
+
+#searchbox {
+    /*margin-left: 134px;*/
+    padding: 0 16px 0 16px;
+    width: 100%;
+}

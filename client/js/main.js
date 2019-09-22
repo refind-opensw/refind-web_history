@@ -1,17 +1,129 @@
 // 문서가 로드되었을 때
 $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
+
+    chrome.storage.sync.get(data => {
+        if(!data.searchDate) {
+            let s = new Date();
+            let e = new Date();
+            s.setHours(0);
+            s.setMinutes(0);
+            s.setSeconds(0);
+            s.setMilliseconds(0);
+            e.setHours(23);
+            e.setMinutes(59);
+            e.setSeconds(59);
+            e.setMilliseconds(999);
+
+            $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
+            $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
+
+            setSaveData({
+                searchDate: {
+                    start: s.getMilliseconds(),
+                    end: s.getMilliseconds()
+                }
+            });
+        }
+        else {
+            let s = new Date(data.searchDate.start);
+            let e = new Date(data.searchDate.end);
+            console.log(s, e);
+            $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
+            $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
+            $('#date_from').calendar('set date', s);
+            $('#date_to').calendar('set date', e);
+        }
+    });
+
+    $('main > .ui.cards').empty();
+    for (let i = 0; i < initCard.length; i++) {
+        $('main > .ui.cards').append(`
+        <div class="ui link card">
+            <div class="content">
+                <div class="header">${initCard[i].title}</div>
+            </div>
+            ${initCard[i].catno === 0 ? '' : `
+                <div class="content">
+                    <img src="${initCard[i].imgsrc}" alt="${initCard[i].title} 의 이미지" width="96px">
+                </div>
+            `}
+            <div class="extra content" data-cat="${initCard[i].catno}">
+                <p><span>NaN</span>건 검색됨</p>
+            </div>
+        </div>
+        `);
+    }
+
+    $('#date_from').calendar({
+        type: 'date',
+        monthFirst: false,
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return `${year}년 ${month}월 ${day}일`;
+            }
+        }
+    });
+    $('#date_to').calendar({
+        type: 'date',
+        monthFirst: false,
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return `${year}년 ${month}월 ${day}일`;
+            }
+        }
+    });
+
+    $(document).on('click', "#action_search", actionSearch);
 });
 
-// 방문기록 가져오는 기본 함수
-const getHistory = chrome.history.search;
-/*
-    getHistory({text: '', maxResults: 10}, function(data) {
-        data.forEach(function(page) {
-            console.log(page);
-        });
-    });
-*/
+const actionSearch = () => {
+    const s = $('#date_from').calendar('get date');
+    const e = $('#date_to').calendar('get date');
+    s.setHours(0);
+    s.setMinutes(0);
+    s.setSeconds(0);
+    s.setMilliseconds(0);
+    e.setHours(23);
+    e.setMinutes(59);
+    e.setSeconds(59);
+    e.setMilliseconds(999);
+
+    const startTime = s.getTime();
+    const endTime = e.getTime();
+
+    $('.search-date > .s').html(millisToDate(startTime, '.'));
+    $('.search-date > .e').html(millisToDate(endTime, '.'));
+
+    console.log(startTime, endTime);
+    getTextTestFunc({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
+    
+    chrome.storage.sync.set({
+        searchDate: {
+            start: startTime,
+            end: endTime
+        }
+    })
+}
+
+const sendUrlAndGet = url => {
+    $.post("http://dev.chsain.com:3000/getbodytext", {
+        url: url
+    }, data => {
+        console.log(data);
+    })
+        .fail(msg => {
+            alert("error!");
+        })
+}
 
 // url로 bodytext 가져오기
 const getBodyTxtFromUrl = url => {
@@ -29,40 +141,4 @@ const getTextTestFunc = obj => {
             getBodyTxtFromUrl(page.url);
         });
     });
-}
-
-// html 스트링으로부터 text만 추출
-// https://stackoverflow.com/questions/28899298/extract-the-text-out-of-html-string-using-javascript
-const extTextFromHtmls = (s, space) => {
-    let span = document.createElement('span');
-    span.innerHTML = s;
-    if (space) {
-        let children = span.querySelectorAll('*');
-        for (let i = 0; i < children.length; i++) {
-            if (children[i].textContent)
-                children[i].textContent += ' ';
-            else
-                children[i].innerText += ' ';
-        }
-    }
-    return [span.textContent || span.innerText].toString().replace(/ +/g, ' ');
-};
-
-// 방문기록 조회 시 날짜 및 시간을 밀리세컨드 단위로 환산
-const dateToMillis = dateTimeString => {
-    const d = new Date(dateTimeString);
-    return d.getTime();
-}
-
-// 밀리세컨드를 날짜 및 시간 스트링으로 변환
-const millisToDate = millisecs => {
-    const d = new Date(millisecs);
-    const dtstring = `${d.getFullYear()}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)} ${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}:${pad(d.getSeconds(), 2)}`;
-    return dtstring;
-}
-
-// 자리수 0 채우기 함수 (날짜 출력 시 필요)
-const pad = (n, width) => {
-    n = n + '';
-    return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 }
