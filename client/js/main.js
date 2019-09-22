@@ -32,6 +32,7 @@ const getTextTestFunc = obj => {
 }
 
 // html 스트링으로부터 text만 추출
+// https://stackoverflow.com/questions/28899298/extract-the-text-out-of-html-string-using-javascript
 const extTextFromHtmls = (s, space) => {
     let span = document.createElement('span');
     span.innerHTML = s;
