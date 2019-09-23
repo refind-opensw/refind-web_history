@@ -1,10 +1,22 @@
 var express = require('express');
 const cheerio = require('cheerio');
 const request = require('request');
+const {PythonShell} = require('python-shell');
 var router = express.Router();
 
-// https://stackoverflow.com/questions/48347439/how-to-get-innertext-from-body-of-a-url
+let options = {
+  mode: 'text',
+  pythonOptions: ['-u'],
+  scriptPath: 'pyscripts/',
+  args: ['www.google.com', '값1', '값2']
+}
 
+PythonShell.run('test.py', options, function(err, results) {
+  if(err) throw err;
+  console.log("실행 결과", results);
+});
+
+// https://stackoverflow.com/questions/48347439/how-to-get-innertext-from-body-of-a-url
 const getDOMFromURI = uri => {
   return new Promise((resolve, reject) => {
     request(uri, (err, res, body) => {
