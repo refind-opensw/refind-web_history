@@ -110,7 +110,7 @@ def kkmaFreqToDataFrame(text):
 
 #mecab 이용 형태소 분석 https://konlpy-ko.readthedocs.io/ko/v0.4.3/api/konlpy.tag/
 def mecabFreqToDataFrame(text):
-    mecab = Mecab()
+    mecab = Mecab("/usr/local/lib/mecab/dic/mecab-ko-dic/")
     
     #kkma.nouns(text)라는 함수가 있지만 결과가 좋지 못하므로 조건을 달리함
     nouns = mecab.nouns(text)
