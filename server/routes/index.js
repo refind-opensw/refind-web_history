@@ -11,7 +11,7 @@ let options = {
   args: ['www.google.com', '값1', '값2']
 }
 
-PythonShell.run('test.py', options, function(err, results) {
+PythonShell.run('url_wordfreq_seeker.py', options, function(err, results) {
   if(err) throw err;
   console.log("실행 결과", results);
 });
@@ -33,9 +33,9 @@ router.post('/getbodytext', function(req, res, next) {
   const url = req.body.url;
   request(url, function (error, response, body) {
     console.log('body:', body); // Print the HTML for the Google homepage.
-    // 정규표현식으로 태그 제거
-    var re = body.replace(/(<([^>]+)>)/ig, "");
-    res.send(re);
+    // // 정규표현식으로 태그 제거
+    // var re = body.replace(/(<([^>]+)>)/ig, "");
+    // res.send(re);
   });
 });
 
