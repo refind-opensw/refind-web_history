@@ -1,3 +1,5 @@
+const serverUrl = "http://dev.chsain.com:3000/";
+
 // 초기 대주제 데이터 구성
 // 뉴스, 스포츠, 게임, 음악, 연예, 생활/노하우, 건강, 자동차, IT/기술, 기타
 const initCard = [
@@ -66,6 +68,94 @@ const getHistory = chrome.history.search;
         });
     });
 */
+
+// 검색 및 분류
+const categorize = {
+    _reqTimes: 0,
+    _resTimes: 0,
+    _succeedReqs: 0,
+    _failedReqs: 0,
+    do(obj) {
+        getHistory(obj, data => {
+            this._reqTimes = data.length;
+            this._resTimes = 0;
+            this._succeedReqs = 0;
+            this. _failedReqs = 0;
+            if(this._reqTimes > 0) {
+                window.resultData = {};
+                initCard.forEach(({catno, title}) => {
+                    window.resultData[catno] || (window.resultData[catno] = {data: {}, name: title});
+                });
+            }
+            data.forEach(page => {
+                console.log(`${page.url} ==> `)
+                new CoreCategorize(page);
+            });
+        });
+    },
+    set reqTimes(v) {
+        this._reqTimes = v;
+    },
+    get reqTimes() {
+        return this._reqTimes;
+    },
+    set resTimes(v) {
+        this._resTimes = v;
+    },
+    get resTimes() {
+        return this._resTimes;
+    },
+    set succeedReqs(v) {
+        this._succeedReqs = v;
+    },
+    get succeedReqs() {
+        return this._succeedReqs;
+    },
+    set failedReqs(v) {
+        this._failedReqs = v;
+    },
+    get failedReqs() {
+        return this._failedReqs;
+    }
+}
+
+// 서버로 url을 분석하여 카테고리 분류 및 데이터 저장
+function CoreCategorize(obj, to) {
+    this.obj = obj;
+    this.to = to || '';
+
+    $.post(`${serverUrl}do_categorize${this.to}`,
+    {
+        obj: JSON.stringify(this.obj)
+    }, 
+    ({main, sub, obj}) => {
+        // console.log({main, sub});
+        let r = window.resultData[main].data[sub];
+        if(!r) window.resultData[main].data[sub] = new Array();
+        window.resultData[main].data[sub].push(obj);
+        categorize.resTimes++;
+        categorize.succeedReqs++;
+
+        if(categorize.resTimes === categorize.reqTimes) {
+            if(categorize.reqTimes === categorize.succeedReqs) {
+                console.log('뷰 갱신 및 데이터 저장');
+                chrome.storage.sync.set({resultData: window.resultData});
+            }
+            else {
+                console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+                chrome.storage.sync.set({resultData: window.resultData});
+            }
+        }
+    })
+    .fail(() => {
+        categorize.resTimes++;
+        categorize.failedReqs++;
+        if(categorize.resTimes === categorize.reqTimes) {
+            console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+            chrome.storage.sync.set({resultData: window.resultData});
+        }
+    });
+}
 
 // html 스트링으로부터 text만 추출
 // https://stackoverflow.com/questions/28899298/extract-the-text-out-of-html-string-using-javascript

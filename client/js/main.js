@@ -3,16 +3,23 @@ $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
 
     chrome.storage.sync.get(data => {
-        const {resultData} = data;
-        resultData || chrome.storage.sync.set({
-            resultData: {}
-        }, () => {
-            chrome.storage.sync.get(data => {
-                initResultData(initCard, data);
-            });   
-        });
+        const {resultData, searchDate} = data;
+
+        if(!resultData) {
+            chrome.storage.sync.set({
+                resultData: {}
+            }, () => {
+                chrome.storage.sync.get(data => {
+                    checkResultData(initCard, data, 0);
+                });   
+            });
+        }
+        else {
+            checkResultData(initCard, data, 0);
+            window.resultData = resultData;
+        }
         
-        if(!data.searchDate) {
+        if(!searchDate) {
             let s = new Date();
             let e = new Date();
             s.setHours(0);
@@ -32,11 +39,12 @@ $(document).ready(e => {
                     start: s.getMilliseconds(),
                     end: s.getMilliseconds()
                 }
-            });
+            }, () => {window.searchDate = searchDate});
         }
         else {
-            let s = new Date(data.searchDate.start);
-            let e = new Date(data.searchDate.end);
+            let s = new Date(searchDate.start);
+            let e = new Date(searchDate.end);
+            window.searchDate = searchDate;
             console.log(s, e);
             $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
             $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
@@ -113,7 +121,7 @@ const actionSearch = () => {
     $('.search-date > .e').html(millisToDate(endTime, '.'));
 
     console.log(startTime, endTime);
-    getTextTestFunc({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
+    categorize.do({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
     
     chrome.storage.sync.set({
         searchDate: {
@@ -123,20 +131,15 @@ const actionSearch = () => {
     });
 }
 
-const initResultData = (objs, {resultData}) => {
-    objs.forEach(objs => {
-        const {title, catno} = objs;
-        console.log(title, catno);
-        resultData && chrome.storage.sync.set({
-            resultData: resultData || {
-                catno: resultData[catno] || {
-                    name: title,
-                    data: []
-                }
-            } 
-        })
+const checkResultData = (objs, {resultData}) => {
+    let _o = {};
+    objs.forEach(({catno, title}) => {
+        resultData[catno] || (_o[catno] = {data: {}, name: title});
     });
-    console.log("test@@@");
+
+    if(!!Object.keys(_o).length) chrome.storage.sync.set({resultData: _o}, () => {window.resultData = _o});
+
+    return _o;
 }
 
 const sendUrlAndGet = url => {
