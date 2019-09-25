@@ -3,6 +3,15 @@ $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
 
     chrome.storage.sync.get(data => {
+        const {resultData} = data;
+        resultData || chrome.storage.sync.set({
+            resultData: {}
+        }, () => {
+            chrome.storage.sync.get(data => {
+                initResultData(initCard, data);
+            });   
+        });
+        
         if(!data.searchDate) {
             let s = new Date();
             let e = new Date();
@@ -18,7 +27,7 @@ $(document).ready(e => {
             $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
             $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
 
-            setSaveData({
+            chrome.storage.sync.set({
                 searchDate: {
                     start: s.getMilliseconds(),
                     end: s.getMilliseconds()
@@ -61,9 +70,9 @@ $(document).ready(e => {
         formatter: {
             date: function (date, settings) {
                 if (!date) return '';
-                var day = date.getDate();
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
                 return `${year}년 ${month}월 ${day}일`;
             }
         }
@@ -74,9 +83,9 @@ $(document).ready(e => {
         formatter: {
             date: function (date, settings) {
                 if (!date) return '';
-                var day = date.getDate();
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
                 return `${year}년 ${month}월 ${day}일`;
             }
         }
@@ -111,7 +120,23 @@ const actionSearch = () => {
             start: startTime,
             end: endTime
         }
-    })
+    });
+}
+
+const initResultData = (objs, {resultData}) => {
+    objs.forEach(objs => {
+        const {title, catno} = objs;
+        console.log(title, catno);
+        resultData && chrome.storage.sync.set({
+            resultData: resultData || {
+                catno: resultData[catno] || {
+                    name: title,
+                    data: []
+                }
+            } 
+        })
+    });
+    console.log("test@@@");
 }
 
 const sendUrlAndGet = url => {
