@@ -84,7 +84,7 @@ const categorize = {
             if(this._reqTimes > 0) {
                 window.resultData = {};
                 initCard.forEach(({catno, title}) => {
-                    window.resultData[catno] || (window.resultData[catno] = {data: {}, name: title});
+                    window.resultData[catno] || (window.resultData[catno] = {data: {}, title: title, length: 0});
                 });
             }
             data.forEach(page => {
@@ -133,6 +133,8 @@ function CoreCategorize(obj, to) {
         let r = window.resultData[main].data[sub];
         if(!r) window.resultData[main].data[sub] = new Array();
         window.resultData[main].data[sub].push(obj);
+        window.resultData[main].length++;
+        $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
         categorize.resTimes++;
         categorize.succeedReqs++;
 

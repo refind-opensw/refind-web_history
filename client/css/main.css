@@ -50,6 +50,7 @@ footer > .divider {
 
 .ui.cards {
     width: 220%;
+    height: 270px;
     padding: 16px;
 }
 
@@ -57,9 +58,18 @@ footer > .divider {
     width: 108px;
 }
 
+.ui.card > .content {
+    pointer-events: none;
+}
+
+.ui.card > .extra.content {
+    pointer-events: none;
+}
+
 .ui.card .content img, .ui.cards > .card .content img  {
     margin: 0 auto 0 auto;
     display: flex;
+    pointer-events: none;
 }
 
 #searchbox {

@@ -54,23 +54,25 @@ $(document).ready(e => {
     });
 
     $('main > .ui.cards').empty();
-    for (let i = 0; i < initCard.length; i++) {
-        $('main > .ui.cards').append(`
-        <div class="ui link card">
-            <div class="content">
-                <div class="header">${initCard[i].title}</div>
-            </div>
-            ${initCard[i].catno === 0 ? '' : `
-                <div class="content">
-                    <img src="${initCard[i].imgsrc}" alt="${initCard[i].title} 의 이미지" width="96px">
-                </div>
-            `}
-            <div class="extra content" data-cat="${initCard[i].catno}">
-                <p><span>NaN</span>건 검색됨</p>
-            </div>
-        </div>
-        `);
-    }
+    // for (let i = 0; i < initCard.length; i++) {
+    //     $('main > .ui.cards').append(`
+    //     <div class="ui link card" data-level="main" data-cat="${initCard[i].catno}">
+    //         <div class="content">
+    //             <div class="header">${initCard[i].title}</div>
+    //         </div>
+    //         ${initCard[i].catno === 0 ? '' : `
+    //             <div class="content">
+    //                 <img src="${initCard[i].imgsrc}" alt="${initCard[i].title} 의 이미지" width="96px">
+    //             </div>
+    //         `}
+    //         <div class="extra content" data-cat="${initCard[i].catno}">
+    //             <p><span>NaN</span>건 검색됨</p>
+    //         </div>
+    //     </div>
+    //     `);
+    // }
+
+    $(document).on('click', '.ui.link.card', cardClick);
 
     $('#date_from').calendar({
         type: 'date',
@@ -131,10 +133,119 @@ const actionSearch = () => {
     });
 }
 
+const cardClick = e => {
+    const target = $(e.target)
+    const selected = target.attr('data-cat');
+    const level = target.attr('data-level');
+    const title = $('header > div > h2');
+    const container = $('.ui.cards');
+    let data = null;
+    console.log(selected);
+
+    if(level === "main") {
+        data = window.resultData[selected];
+    }
+    else if(level === "sub") {
+
+    }
+    else {
+        console.error("Error occurred while rendering...level is not defined.");
+    }
+
+    console.log(data);
+    title.html(data.name);
+    container.animate({opacity: 0}, 250, () => {
+        container.empty();
+        
+    });
+    
+}
+
+const cardRender = (data, level) => {
+    const container = $('main > .ui.cards');
+    let tmp = null;
+    container.empty();
+    if(Array.isArray(data)) {
+        for (let i = 0; i < data.length; i++) {
+            container.append(`
+            <div class="ui link card" data-level="${level}" data-cat="${data[i].catno}">
+                <div class="content">
+                    <div class="header">${data[i].title}</div>
+                </div>
+                ${data[i].catno === 0 || level != "main" ? '' : `
+                    <div class="content">
+                        <img src="${data[i].imgsrc}" alt="${data[i].title} 의 이미지" width="96px">
+                    </div>
+                `}
+                <div class="extra content" data-cat="${data[i].catno}">
+                    <p><span>NaN</span>건 검색됨</p>
+                </div>
+            </div>`);
+        }
+    }
+    else {
+        Object.keys(data).forEach((val, idx) => {
+            const {title, imgsrc, length} = data[val];
+            if(level === "main") {
+                if(val == 0) tmp = `
+                <div class="ui link card" data-level="${level}" data-cat="${val}">
+                    <div class="content">
+                        <div class="header">${title}</div>
+                    </div>
+                    ${val == 0 || level != "main" ? '' : `
+                        <div class="content">
+                            <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                        </div>
+                    `}
+                    <div class="extra content" data-cat="${val}">
+                        <p><span>${length}</span>건 검색됨</p>
+                    </div>
+                </div>`;
+
+                else {
+                    container.append(`
+                    <div class="ui link card" data-level="${level}" data-cat="${val}">
+                        <div class="content">
+                            <div class="header">${title}</div>
+                        </div>
+                        ${val == 0 || level != "main" ? '' : `
+                            <div class="content">
+                                <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                            </div>
+                        `}
+                        <div class="extra content" data-cat="${val}">
+                            <p><span>${length}</span>건 검색됨</p>
+                        </div>
+                    </div>`);
+
+                    if(idx === initCard.length - 1) container.append(tmp);
+                }
+            }
+            else if(level === "sub") {
+                container.append(`
+                <div class="ui link card" data-level="${level}" data-cat="${val}">
+                    <div class="content">
+                        <div class="header">${val}</div>
+                    </div>
+                    ${val == 0 || level != "main" ? '' : `
+                        <div class="content">
+                            <img src="${imgsrc}" alt="${data.val} 의 이미지" width="96px">
+                        </div>
+                    `}
+                    <div class="extra content" data-cat="${val}">
+                        <p><span>${data[val].length}</span>건 검색됨</p>
+                    </div>
+                </div>`);
+            }
+        });
+    }
+    
+}
+
 const checkResultData = (objs, {resultData}) => {
     let _o = {};
-    objs.forEach(({catno, title}) => {
-        resultData[catno] || (_o[catno] = {data: {}, name: title});
+    objs.forEach(({catno, title, imgsrc}) => {
+        resultData[catno] || (_o[catno] = {data: {}, imgsrc: imgsrc, title: title, length: 0});
     });
 
     if(!!Object.keys(_o).length) chrome.storage.sync.set({resultData: _o}, () => {window.resultData = _o});
