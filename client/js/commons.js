@@ -69,6 +69,19 @@ const getHistory = chrome.history.search;
     });
 */
 
+// 데이터 검증 및 구성 함수
+const checkResultData = (objs, {resultData}) => {
+    let _o = {};
+    objs.forEach(({catno, title, imgsrc}) => {
+        resultData[catno] || (_o[catno] = {data: {}, imgsrc: imgsrc, title: title, length: 0});
+    });
+
+    if(!!Object.keys(_o).length) localStorage.setItem("resultData", JSON.stringify(_o));
+    window.resultData = _o
+
+    return _o;
+}
+
 // 검색 및 분류
 const categorize = {
     _reqTimes: 0,
@@ -141,12 +154,12 @@ function CoreCategorize(obj, to) {
         if(categorize.resTimes === categorize.reqTimes) {
             if(categorize.reqTimes === categorize.succeedReqs) {
                 console.log('뷰 갱신 및 데이터 저장');
-                chrome.storage.sync.set({resultData: window.resultData});
             }
             else {
                 console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-                chrome.storage.sync.set({resultData: window.resultData});
             }
+            localStorage.setItem("resultData", JSON.stringify(window.resultData));
+            $('.ui.active.dimmer').detach();
         }
     })
     .fail(() => {
@@ -154,8 +167,260 @@ function CoreCategorize(obj, to) {
         categorize.failedReqs++;
         if(categorize.resTimes === categorize.reqTimes) {
             console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-            chrome.storage.sync.set({resultData: window.resultData});
+            localStorage.setItem("resultData", JSON.stringify(window.resultData));
+            $('.ui.active.dimmer').detach();
         }
+    });
+}
+
+// 조회 및 분류 함수
+const actionSearch = () => {
+    const s = $('#date_from').calendar('get date');
+    const e = $('#date_to').calendar('get date');
+    s.setHours(0);
+    s.setMinutes(0);
+    s.setSeconds(0);
+    s.setMilliseconds(0);
+    e.setHours(23);
+    e.setMinutes(59);
+    e.setSeconds(59);
+    e.setMilliseconds(999);
+
+    const startTime = s.getTime();
+    const endTime = e.getTime();
+
+    $('.search-date > .s').html(millisToDate(startTime, '.'));
+    $('.search-date > .e').html(millisToDate(endTime, '.'));
+
+    $(document.body).append(`<div class="ui active dimmer"><div class="ui loader"></div></div>`);
+
+    console.log(startTime, endTime);
+    categorize.do({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
+    
+    chrome.storage.sync.set({
+        searchDate: {
+            start: startTime,
+            end: endTime
+        }
+    });
+}
+
+// 항목 클릭시 함수 호출
+const cardClick = e => {
+    const target = $(e.target)
+    const selected = target.attr('data-cat');
+    const level = target.attr('data-level');
+    const title = $('header > div > h2 > span');
+    const prevBtn = $('#go_prev');
+    const container = $('.ui.cards');
+    let rLevel = "main";
+    let data = null;
+    let titleText = "";
+    console.log(selected);
+    console.log(level);
+    console.log(target);
+
+    if(level === "main") {
+        rLevel = "sub";
+        data = window.resultData[selected].data;
+        if(Object.keys(data).length < 1) return;
+        window.catMain = selected;
+        titleText = window.resultData[selected].title;
+        prevBtn.css({"display": "inline-flex"});
+    }
+    else if(level === "sub") {
+        rLevel = "entries";
+        data = window.resultData[window.catMain].data[selected];
+        if(data.length < 1) return;
+        window.catSub = selected;
+        titleText = selected;
+        prevBtn.css({"display": "inline-flex"});
+    }
+    else if(level === "entries" || target.parents('.item').attr('data-level') === "entries") {
+        prevBtn.css({"display": "inline-flex"});
+        if(target.parent().parent().attr('class') === "description") {
+            console.log("클립보드에 복사되었습니다.", target.html());
+            copyToClipboard(target.html());
+        }
+        else {
+            const url = target.attr('class') === "item" 
+            ? target.find('.description > a > b').html() 
+            : target.parents('.item').find('.description > a > b').html();
+            console.log(url);
+            chrome.tabs.create({url: url, selected: false});
+        }
+
+        return;
+    }
+    else {
+        console.error("Error occurred while rendering...level is not defined.");
+    }
+
+    prevBtn.attr('prev-level', level);
+
+    console.log(data);
+    title.html(titleText);
+    container.animate({opacity: 0}, 250, () => {
+        cardRender(data, rLevel);
+        container.animate({opacity: 1}, 250);
+    });
+}
+
+// 항목 렌더링 함수
+const cardRender = (data, level) => {
+    const container = $('main > div');
+    const main = $('main');
+    let tmp = null;
+    container.empty();
+    if(Array.isArray(data)) {
+        if(level === "entries") {
+            main.scrollLeft(0);
+            container.attr('class', 'list-container');
+            container.css({"width": "inherit"});
+            main.css({"overflow-x": "hidden", "overflow-y": "auto"});
+            container.append('<div class="ui middle aligned selection celled list"></div>');
+            for(let i = 0; i < data.length; i++) {
+                $('.ui.list').append(`
+                <div class="item" data-level="${level}">
+                    <i class="eye icon" title="미리보기" data-html='<iframe src="${data[i].url}" width="360" height="260" frameborder="0"></iframe>'></i>
+                    <div class="content">
+                        <div class="header">${data[i].title}</div>
+                        <div class="desc-container">
+                            <div class="description" title="복사하려면 클릭하세요."><a><b>${data[i].url}</b></a></div>
+                            <div class="lst-date" title="${millisToDateTime(data[i].lastVisitTime)}">${dateTimePrintEngine(new Date(), new Date(data[i].lastVisitTime))}</div>
+                        </div>
+                    </div>
+                </div>`);
+            }
+            $('.eye.icon').popup({
+                position: 'right center',
+                hoverable: true,
+                transition: 'fade up',
+                delay: {
+                  show: 300,
+                  hide: 800
+                }
+              });
+        }
+        else {
+            main.scrollTop(0);
+            container.attr('class', 'ui ten cards');
+            container.css({"width": "220%"});
+            main.css({"overflow-y": "hidden", "overflow-x": "auto"});
+            for (let i = 0; i < data.length; i++) {
+                container.append(`
+                <div class="ui link card" data-level="${level}" data-cat="${data[i].catno}">
+                    <div class="content">
+                        <div class="header">${data[i].title}</div>
+                    </div>
+                    ${data[i].catno === 0 || level != "main" ? '' : `
+                        <div class="content">
+                            <img src="${data[i].imgsrc}" alt="${data[i].title} 의 이미지" width="96px">
+                        </div>
+                    `}
+                    <div class="extra content" data-cat="${data[i].catno}">
+                        <p><span>NaN</span>건 검색됨</p>
+                    </div>
+                </div>`);
+            }
+        }
+    }
+    else {
+        Object.keys(data).forEach((val, idx) => {
+            const {title, imgsrc, length} = data[val];
+            if(level === "main") {
+                main.scrollTop(0);
+                container.attr('class', 'ui ten cards');
+                container.css({"width": "220%"});
+                main.css({"overflow-y": "hidden", "overflow-x": "auto"});
+
+                if(val == 0) tmp = `
+                <div class="ui link card" data-level="${level}" data-cat="${val}">
+                    <div class="content">
+                        <div class="header">${title}</div>
+                    </div>
+                    ${val == 0 || level != "main" ? '' : `
+                        <div class="content">
+                            <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                        </div>
+                    `}
+                    <div class="extra content" data-cat="${val}">
+                        <p><span>${length}</span>건 검색됨</p>
+                    </div>
+                </div>`;
+
+                else {
+                    container.append(`
+                    <div class="ui link card" data-level="${level}" data-cat="${val}">
+                        <div class="content">
+                            <div class="header">${title}</div>
+                        </div>
+                        ${val == 0 || level != "main" ? '' : `
+                            <div class="content">
+                                <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                            </div>
+                        `}
+                        <div class="extra content" data-cat="${val}">
+                            <p><span>${length}</span>건 검색됨</p>
+                        </div>
+                    </div>`);
+
+                    if(idx === initCard.length - 1) container.append(tmp);
+                }
+            }
+            else if(level === "sub") {
+                main.scrollLeft(0);
+                container.attr('class', 'ui five cards');
+                container.css({"width": "inherit"});
+                main.css({"overflow-x": "hidden", "overflow-y": "auto"});
+                
+                container.append(`
+                <div class="ui link card" data-level="${level}" data-cat="${val}">
+                    <div class="content">
+                        <h4>${val}</h4>
+                    </div>
+                    ${val == 0 || level != "main" ? '' : `
+                        <div class="content">
+                            <img src="${imgsrc}" alt="${data.val} 의 이미지" width="96px">
+                        </div>
+                    `}
+                    <div class="extra content" data-cat="${val}">
+                        <p><span>${data[val].length}</span>건 검색됨</p>
+                    </div>
+                </div>`);
+            }
+        });
+    }
+}
+
+// 뒤로가기
+const goPrev = e => {
+    const container = $('main > div');
+    const target = $(e.target);
+    const title = $('header > div > h2 > span');
+    const prevBtn = $('#go_prev');
+    const prevLevel = target.attr('prev-level');
+    let data = null;
+
+    if(prevLevel === "sub") {
+        data = window.resultData[window.catMain].data;
+        titleText = window.resultData[window.catMain].title;
+        prevBtn.css({"display": "inline-flex"});
+        prevBtn.attr('prev-level', 'main');
+        console.log(data);
+    }
+    else if(prevLevel === "main") {
+        data = window.resultData;
+        titleText = "대주제";
+        prevBtn.css({"display": "none"});
+        prevBtn.attr('prev-level', 'none');
+        console.log(data);
+    }
+
+    title.html(titleText);
+    container.animate({opacity: 0}, 250, () => {
+        cardRender(data, prevLevel);
+        container.animate({opacity: 1}, 250);
     });
 }
 
@@ -196,8 +461,40 @@ const millisToDate = (millisecs, separator) => {
     return dtstring;
 }
 
+// 날짜 출력 함수
+function dateTimePrintEngine(current, writed) {
+    var elapsed = (current.getTime() - writed.getTime())/1000;
+    console.log(elapsed);
+
+    if(elapsed < 60.0)
+        return '방금 전';
+    else if(elapsed >= 60 && elapsed < 60 * 60)
+        return Math.floor((elapsed / 60)) + '분 전';
+    else if(elapsed >= 60 * 60 && elapsed < 60 * 60 * 24)
+        return Math.floor((elapsed / (60 * 60))) + '시간 전';
+    else if(elapsed >= 60 * 60 * 24 && elapsed < 60 * 60 * 24 * 7)
+        return Math.floor((elapsed / (60 * 60 * 24))) + '일 전';
+    else {
+        if(current.getFullYear() == writed.getFullYear())
+            return (writed.getMonth() + 1) + '월 ' + writed.getDate() + '일';
+        else
+            return writed.getFullYear() + '년 ' + (writed.getMonth() + 1) + '월 ' + writed.getDate() + '일';
+    }
+}
+
 // 자리수 0 채우기 함수 (날짜 출력 시 필요)
 const pad = (n, width) => {
     n = n + '';
     return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 }
+
+// https://zetawiki.com/wiki/JavaScript_클립보드로_복사하기
+// 클립보드 복사 함수
+function copyToClipboard(val) {
+    let t = document.createElement("textarea");
+    document.body.appendChild(t);
+    t.value = val;
+    t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+  }

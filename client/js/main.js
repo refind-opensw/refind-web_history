@@ -2,22 +2,18 @@
 $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
 
+    if(!localStorage.getItem("resultData")) {
+        const tmp = {resultData: {}}; 
+        console.log(checkResultData(initCard, tmp));
+    }
+    else {
+        window.resultData = JSON.parse(localStorage.getItem("resultData"));
+        console.log(checkResultData(initCard, window));
+        window.resultData = JSON.parse(localStorage.getItem("resultData"));
+    }
+    
     chrome.storage.sync.get(data => {
-        const {resultData, searchDate} = data;
-
-        if(!resultData) {
-            chrome.storage.sync.set({
-                resultData: {}
-            }, () => {
-                chrome.storage.sync.get(data => {
-                    checkResultData(initCard, data, 0);
-                });   
-            });
-        }
-        else {
-            checkResultData(initCard, data, 0);
-            window.resultData = resultData;
-        }
+        const {searchDate} = data;
         
         if(!searchDate) {
             let s = new Date();
@@ -53,26 +49,11 @@ $(document).ready(e => {
         }
     });
 
-    $('main > .ui.cards').empty();
-    // for (let i = 0; i < initCard.length; i++) {
-    //     $('main > .ui.cards').append(`
-    //     <div class="ui link card" data-level="main" data-cat="${initCard[i].catno}">
-    //         <div class="content">
-    //             <div class="header">${initCard[i].title}</div>
-    //         </div>
-    //         ${initCard[i].catno === 0 ? '' : `
-    //             <div class="content">
-    //                 <img src="${initCard[i].imgsrc}" alt="${initCard[i].title} 의 이미지" width="96px">
-    //             </div>
-    //         `}
-    //         <div class="extra content" data-cat="${initCard[i].catno}">
-    //             <p><span>NaN</span>건 검색됨</p>
-    //         </div>
-    //     </div>
-    //     `);
-    // }
+    cardRender(window.resultData, "main");
 
     $(document).on('click', '.ui.link.card', cardClick);
+    $(document).on('click', '.ui.list > .item', cardClick);
+    $(document).on('click', '#go_prev', goPrev);
 
     $('#date_from').calendar({
         type: 'date',
@@ -103,179 +84,6 @@ $(document).ready(e => {
 
     $(document).on('click', "#action_search", actionSearch);
 });
-
-const actionSearch = () => {
-    const s = $('#date_from').calendar('get date');
-    const e = $('#date_to').calendar('get date');
-    s.setHours(0);
-    s.setMinutes(0);
-    s.setSeconds(0);
-    s.setMilliseconds(0);
-    e.setHours(23);
-    e.setMinutes(59);
-    e.setSeconds(59);
-    e.setMilliseconds(999);
-
-    const startTime = s.getTime();
-    const endTime = e.getTime();
-
-    $('.search-date > .s').html(millisToDate(startTime, '.'));
-    $('.search-date > .e').html(millisToDate(endTime, '.'));
-
-    console.log(startTime, endTime);
-    categorize.do({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
-    
-    chrome.storage.sync.set({
-        searchDate: {
-            start: startTime,
-            end: endTime
-        }
-    });
-}
-
-const cardClick = e => {
-    const target = $(e.target)
-    const selected = target.attr('data-cat');
-    const level = target.attr('data-level');
-    const title = $('header > div > h2');
-    const container = $('.ui.cards');
-    let data = null;
-    console.log(selected);
-
-    if(level === "main") {
-        data = window.resultData[selected];
-    }
-    else if(level === "sub") {
-
-    }
-    else {
-        console.error("Error occurred while rendering...level is not defined.");
-    }
-
-    console.log(data);
-    title.html(data.name);
-    container.animate({opacity: 0}, 250, () => {
-        container.empty();
-        
-    });
-    
-}
-
-const cardRender = (data, level) => {
-    const container = $('main > .ui.cards');
-    const main = $('main');
-    let tmp = null;
-    container.empty();
-    if(Array.isArray(data)) {
-        for (let i = 0; i < data.length; i++) {
-            container.append(`
-            <div class="ui link card" data-level="${level}" data-cat="${data[i].catno}">
-                <div class="content">
-                    <div class="header">${data[i].title}</div>
-                </div>
-                ${data[i].catno === 0 || level != "main" ? '' : `
-                    <div class="content">
-                        <img src="${data[i].imgsrc}" alt="${data[i].title} 의 이미지" width="96px">
-                    </div>
-                `}
-                <div class="extra content" data-cat="${data[i].catno}">
-                    <p><span>NaN</span>건 검색됨</p>
-                </div>
-            </div>`);
-        }
-    }
-    else {
-        Object.keys(data).forEach((val, idx) => {
-            const {title, imgsrc, length} = data[val];
-            if(level === "main") {
-                main.scrollTop(0);
-                container.removeClass('five');
-                container.addClass('ten');
-                container.css({"width": "220%"});
-                main.css({"overflow-y": "hidden", "overflow-x": "auto"});
-
-                if(val == 0) tmp = `
-                <div class="ui link card" data-level="${level}" data-cat="${val}">
-                    <div class="content">
-                        <div class="header">${title}</div>
-                    </div>
-                    ${val == 0 || level != "main" ? '' : `
-                        <div class="content">
-                            <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
-                        </div>
-                    `}
-                    <div class="extra content" data-cat="${val}">
-                        <p><span>${length}</span>건 검색됨</p>
-                    </div>
-                </div>`;
-
-                else {
-                    container.append(`
-                    <div class="ui link card" data-level="${level}" data-cat="${val}">
-                        <div class="content">
-                            <div class="header">${title}</div>
-                        </div>
-                        ${val == 0 || level != "main" ? '' : `
-                            <div class="content">
-                                <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
-                            </div>
-                        `}
-                        <div class="extra content" data-cat="${val}">
-                            <p><span>${length}</span>건 검색됨</p>
-                        </div>
-                    </div>`);
-
-                    if(idx === initCard.length - 1) container.append(tmp);
-                }
-            }
-            else if(level === "sub") {
-                main.scrollLeft(0);
-                container.removeClass('ten');
-                container.addClass('five');
-                container.css({"width": "inherit"});
-                main.css({"overflow-x": "hidden", "overflow-y": "auto"});
-                
-                container.append(`
-                <div class="ui link card" data-level="${level}" data-cat="${val}">
-                    <div class="content">
-                        <h4>${val}</h4>
-                    </div>
-                    ${val == 0 || level != "main" ? '' : `
-                        <div class="content">
-                            <img src="${imgsrc}" alt="${data.val} 의 이미지" width="96px">
-                        </div>
-                    `}
-                    <div class="extra content" data-cat="${val}">
-                        <p><span>${data[val].length}</span>건 검색됨</p>
-                    </div>
-                </div>`);
-            }
-        });
-    }
-    
-}
-
-const checkResultData = (objs, {resultData}) => {
-    let _o = {};
-    objs.forEach(({catno, title, imgsrc}) => {
-        resultData[catno] || (_o[catno] = {data: {}, imgsrc: imgsrc, title: title, length: 0});
-    });
-
-    if(!!Object.keys(_o).length) chrome.storage.sync.set({resultData: _o}, () => {window.resultData = _o});
-
-    return _o;
-}
-
-const sendUrlAndGet = url => {
-    $.post("http://dev.chsain.com:3000/getbodytext", {
-        url: url
-    }, data => {
-        console.log(data);
-    })
-        .fail(msg => {
-            alert("error!");
-        })
-}
 
 // url로 bodytext 가져오기
 const getBodyTxtFromUrl = url => {

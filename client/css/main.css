@@ -45,7 +45,7 @@ footer {
 footer > .divider {
     margin: 8px auto 16px auto;
     width: calc(100% - 32px);
-    border-top: 1px solid #d4d4d5;
+    border-top: 1px solid #d4d4d4;
 }
 
 .ui.cards {
@@ -65,11 +65,11 @@ footer > .divider {
 }
 
 .ui.card[data-level="sub"]:hover {
-    background-color: #ececec
+    background-color: #ececec;
 }
 
 .ui.card[data-level="sub"]:active {
-    background-color: #dfdfdf
+    background-color: #dfdfdf;
 }
 
 .ui.card[data-level="sub"] > .content {
@@ -101,4 +101,54 @@ footer > .divider {
     /*margin-left: 134px;*/
     padding: 0 16px 0 16px;
     width: 100%;
+}
+
+.ui.list > .item {
+    padding: 8px !important;
+}
+
+.ui.list > .item:active:hover {
+    background-color: #ececec !important;
+}
+
+.ui.list > .item:active {
+    background-color: #dfdfdf !important;
+}
+
+.list-container {
+    height: 270px;
+    padding: 16px;
+}
+
+.desc-container {
+    display: flex;
+}
+
+.description {
+    overflow: hidden;
+    display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 574px;
+}
+
+.lst-date {
+    width: 108px;
+    text-align: right;
+}
+
+#go_prev {
+    display: none;
+    cursor: pointer;
+    color: #d4d4d4;
+    transition: all .2s;
+}
+
+#go_prev:hover {
+    color: #000000;
+}
+
+.ui.popup.visible {
+    /* width: 320px !important;
+    height: 320px !important; */
 }
