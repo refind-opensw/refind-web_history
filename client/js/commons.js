@@ -83,8 +83,8 @@ const categorize = {
             this. _failedReqs = 0;
             if(this._reqTimes > 0) {
                 window.resultData = {};
-                initCard.forEach(({catno, title}) => {
-                    window.resultData[catno] || (window.resultData[catno] = {data: {}, title: title, length: 0});
+                initCard.forEach(({catno, title, imgsrc}) => {
+                    window.resultData[catno] || (window.resultData[catno] = {data: {}, title: title, imgsrc: imgsrc, length: 0});
                 });
             }
             data.forEach(page => {

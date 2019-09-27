@@ -52,10 +52,35 @@ footer > .divider {
     width: 220%;
     height: 270px;
     padding: 16px;
+    user-select: none;
 }
 
 .ui.card {
     width: 108px;
+}
+
+.ui.card[data-level="sub"] {
+    height: 72px;
+    transition: all .2s;
+}
+
+.ui.card[data-level="sub"]:hover {
+    background-color: #ececec
+}
+
+.ui.card[data-level="sub"]:active {
+    background-color: #dfdfdf
+}
+
+.ui.card[data-level="sub"] > .content {
+    padding-top: 10px;
+    padding-bottom: 4px;
+}
+
+.ui.card[data-level="sub"] > .extra.content {
+    border-top: none !important;
+    padding-top: 6px;
+    padding-bottom: 10px;
 }
 
 .ui.card > .content {

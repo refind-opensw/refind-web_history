@@ -163,6 +163,7 @@ const cardClick = e => {
 
 const cardRender = (data, level) => {
     const container = $('main > .ui.cards');
+    const main = $('main');
     let tmp = null;
     container.empty();
     if(Array.isArray(data)) {
@@ -187,6 +188,12 @@ const cardRender = (data, level) => {
         Object.keys(data).forEach((val, idx) => {
             const {title, imgsrc, length} = data[val];
             if(level === "main") {
+                main.scrollTop(0);
+                container.removeClass('five');
+                container.addClass('ten');
+                container.css({"width": "220%"});
+                main.css({"overflow-y": "hidden", "overflow-x": "auto"});
+
                 if(val == 0) tmp = `
                 <div class="ui link card" data-level="${level}" data-cat="${val}">
                     <div class="content">
@@ -222,10 +229,16 @@ const cardRender = (data, level) => {
                 }
             }
             else if(level === "sub") {
+                main.scrollLeft(0);
+                container.removeClass('ten');
+                container.addClass('five');
+                container.css({"width": "inherit"});
+                main.css({"overflow-x": "hidden", "overflow-y": "auto"});
+                
                 container.append(`
                 <div class="ui link card" data-level="${level}" data-cat="${val}">
                     <div class="content">
-                        <div class="header">${val}</div>
+                        <h4>${val}</h4>
                     </div>
                     ${val == 0 || level != "main" ? '' : `
                         <div class="content">
