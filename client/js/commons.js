@@ -315,6 +315,8 @@ const cardClick = e => {
         prevBtn.css({ "display": "inline-flex" });
         drags.hideLeft();
         drags.hideRight();
+        // 세로 - 가로 스크롤 바인딩 해제
+        drags.container.unmousewheel();
     }
     else if (level === "sub") {
         rLevel = "entries";
@@ -502,6 +504,11 @@ const goPrev = e => {
         titleText = "대주제";
         prevBtn.css({ "display": "none" });
         prevBtn.attr('prev-level', 'none');
+        // 대주제로 돌아갈 때 세로 - 가로 스크롤 재 바인딩
+        drags.container.mousewheel(function (event, delta) {
+            this.scrollLeft -= (delta * 1);
+            event.preventDefault();
+        });
         console.log(data);
     }
 
