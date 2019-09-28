@@ -37,6 +37,7 @@ import time
 
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분
 # https://frhyme.github.io/python-basic/korean_or_english/ 
+
 def isEnglishOrKorean(input_s):
     
     k_count = 0
@@ -53,8 +54,6 @@ def isEnglishOrKorean(input_s):
 def mecabFreqToDataFrame(text):
     #리스트에 넣기전 자료형 초기화
     sentence_token = []
-    clean_tokens = []
-    tagged = []
     allnoun = []
     #문장 분류
     kkma = Kkma()
@@ -101,6 +100,7 @@ html=response.read()
 tokens=re.split('\W+',html.decode('utf-8'))
 
 #Beautifulsoup 함수로 뷰티플스프 처리된 html파일을 clean에 저장
+
 clean=BeautifulSoup(html,'html.parser',from_encoding='utf-8')
 # 제목만 뽑아서 title_text에 저장
 title_text = clean.find('title').get_text()
