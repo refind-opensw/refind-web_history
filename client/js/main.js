@@ -2,8 +2,9 @@
 $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
 
-    if(!localStorage.getItem("resultData")) {
-        const tmp = {resultData: {}}; 
+    // 초기 분류 데이터 값 세팅
+    if (!localStorage.getItem("resultData")) {
+        const tmp = { resultData: {} };
         console.log(checkResultData(initCard, tmp));
     }
     else {
@@ -11,11 +12,11 @@ $(document).ready(e => {
         console.log(checkResultData(initCard, window));
         window.resultData = JSON.parse(localStorage.getItem("resultData"));
     }
-    
+
+    // 크롬 스토리지에 검색 날짜 저장 및 불러오기
     chrome.storage.sync.get(data => {
-        const {searchDate} = data;
-        
-        if(!searchDate) {
+        const { searchDate } = data;
+        if (!searchDate) {
             let s = new Date();
             let e = new Date();
             s.setHours(0);
@@ -35,7 +36,7 @@ $(document).ready(e => {
                     start: s.getMilliseconds(),
                     end: s.getMilliseconds()
                 }
-            }, () => {window.searchDate = searchDate});
+            }, () => { window.searchDate = searchDate });
         }
         else {
             let s = new Date(searchDate.start);
@@ -49,12 +50,54 @@ $(document).ready(e => {
         }
     });
 
+    // 초기 저장된 분류 데이터 렌더링
     cardRender(window.resultData, "main");
 
+    // 항목에 클릭 이벤트 등록
     $(document).on('click', '.ui.link.card', cardClick);
     $(document).on('click', '.ui.list > .item', cardClick);
     $(document).on('click', '#go_prev', goPrev);
 
+    // 대주제 스크롤 화살표 아이콘 이벤트 등록
+    drags.container = $('main');
+    drags.left = '#drag_left';
+    drags.right = '#drag_right';
+    drags.container.mouseenter(() => { drags.showLeft(); drags.showRight(); });
+    drags.container.mouseleave(() => { drags.hideLeft(); drags.hideRight(); });
+    drags.container.scroll(() => {
+        if (drags.container.scrollLeft() <= 16) drags.hideLeft();
+        else drags.showLeft();
+        if (drags.container.scrollLeft() >= 892) drags.hideRight();
+        else drags.showRight();
+    });
+
+    // 세로 스크롤 시 가로 스크롤로 바인딩
+    // https://cdnjs.cloudflare.com/ajax/libs/jquery-mousewheel/3.1.13/jquery.mousewheel.min.js
+    // https://css-tricks.com/snippets/jquery/horz-scroll-with-mouse-wheel/
+    drags.container.mousewheel(function (event, delta) {
+        this.scrollLeft -= (delta * 1);
+        event.preventDefault();
+    });
+    drags.left.mousedown(() => {
+        const loop = setInterval(() => {
+            drags.container.animate({
+                scrollLeft: '-=25'
+            }, 0, 'linear');
+            if (drags.container.scrollLeft() <= 16) clearInterval(loop);
+            else drags.left.mouseup(() => clearInterval(loop));
+        }, 50);
+    });
+    drags.right.mousedown(() => {
+        const loop = setInterval(() => {
+            drags.container.animate({
+                scrollLeft: '+=25'
+            }, 0, 'linear');
+            if (drags.container.scrollLeft() >= 892) clearInterval(loop);
+            else drags.right.mouseup(() => clearInterval(loop));
+        }, 50);
+    })
+
+    // 검색 날짜 선택기 초기화 표시 형식 지정
     $('#date_from').calendar({
         type: 'date',
         monthFirst: false,
@@ -82,23 +125,6 @@ $(document).ready(e => {
         }
     });
 
+    // 검색 및 분류 버튼 클릭 이벤트 지정
     $(document).on('click', "#action_search", actionSearch);
 });
-
-// url로 bodytext 가져오기
-const getBodyTxtFromUrl = url => {
-    // getHistory();
-    $.get(url, {}, data => {
-        console.log(extTextFromHtmls(data, true).trim());
-    });
-}
-
-// 방문기록 가져와서 텍스트 추출 (테스트 함수)
-const getTextTestFunc = obj => {
-    getHistory(obj, data => {
-        data.forEach(page => {
-            console.log(`${page.url} ==> `)
-            getBodyTxtFromUrl(page.url);
-        });
-    });
-}

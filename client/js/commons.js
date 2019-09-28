@@ -1,3 +1,4 @@
+// 서버 주소(각자의 개발 환경에 맞춰 세팅할 것)
 const serverUrl = "http://dev.chsain.com:3000/";
 
 // 초기 대주제 데이터 구성
@@ -55,28 +56,17 @@ const initCard = [
     },
 ];
 
-// chrome.storage.sync.set({
-//     userWords: user
-// });
-
-// 방문기록 가져오는 기본 함수
+// 방문기록 가져오는 기본 함수 매핑
 const getHistory = chrome.history.search;
-/*
-    getHistory({text: '', maxResults: 10}, function(data) {
-        data.forEach(function(page) {
-            console.log(page);
-        });
-    });
-*/
 
-// 데이터 검증 및 구성 함수
-const checkResultData = (objs, {resultData}) => {
+// 분류 데이터 검증 및 구성 함수
+const checkResultData = (objs, { resultData }) => {
     let _o = {};
-    objs.forEach(({catno, title, imgsrc}) => {
-        resultData[catno] || (_o[catno] = {data: {}, imgsrc: imgsrc, title: title, length: 0});
+    objs.forEach(({ catno, title, imgsrc }) => {
+        resultData[catno] || (_o[catno] = { data: {}, imgsrc: imgsrc, title: title, length: 0 });
     });
 
-    if(!!Object.keys(_o).length) localStorage.setItem("resultData", JSON.stringify(_o));
+    if (!!Object.keys(_o).length) localStorage.setItem("resultData", JSON.stringify(_o));
     window.resultData = _o
 
     return _o;
@@ -89,19 +79,21 @@ const categorize = {
     _succeedReqs: 0,
     _failedReqs: 0,
     do(obj) {
+        // 방문기록을 가져와서 url을 카테고리 분석 함수에 바동기 방식으로 전달
         getHistory(obj, data => {
             this._reqTimes = data.length;
             this._resTimes = 0;
             this._succeedReqs = 0;
-            this. _failedReqs = 0;
-            if(this._reqTimes > 0) {
+            this._failedReqs = 0;
+            if (this._reqTimes > 0) {
                 window.resultData = {};
-                initCard.forEach(({catno, title, imgsrc}) => {
-                    window.resultData[catno] || (window.resultData[catno] = {data: {}, title: title, imgsrc: imgsrc, length: 0});
+                initCard.forEach(({ catno, title, imgsrc }) => {
+                    window.resultData[catno] || (window.resultData[catno] = { data: {}, title: title, imgsrc: imgsrc, length: 0 });
                 });
             }
             data.forEach(page => {
-                console.log(`${page.url} ==> `)
+                console.log(`${page.url} ==> `);
+                // 카테고리 분석 함수 호출
                 new CoreCategorize(page);
             });
         });
@@ -133,44 +125,49 @@ const categorize = {
 }
 
 // 서버로 url을 분석하여 카테고리 분류 및 데이터 저장
-function CoreCategorize(obj, to) {
+function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
     this.obj = obj;
     this.to = to || '';
 
+    // post로 카테고리 분석 서버로 url 전송
     $.post(`${serverUrl}do_categorize${this.to}`,
-    {
-        obj: JSON.stringify(this.obj)
-    }, 
-    ({main, sub, obj}) => {
-        // console.log({main, sub});
-        let r = window.resultData[main].data[sub];
-        if(!r) window.resultData[main].data[sub] = new Array();
-        window.resultData[main].data[sub].push(obj);
-        window.resultData[main].length++;
-        $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
-        categorize.resTimes++;
-        categorize.succeedReqs++;
+        {
+            obj: JSON.stringify(this.obj)
+        },
+        ({ main, sub, obj }) => {
+            // 결과를 받아옴... main 은 해당 페이지의 대주제(정수), sub 는 소주제(문자열), obj 는 방문기록 페이지 데이터(url, 마지막 방문 날짜 등등 포함)
+            let r = window.resultData[main].data[sub];
+            if (!r) window.resultData[main].data[sub] = new Array();
+            window.resultData[main].data[sub].push(obj);
+            window.resultData[main].length++;
+            $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
+            categorize.resTimes++;
+            categorize.succeedReqs++;
 
-        if(categorize.resTimes === categorize.reqTimes) {
-            if(categorize.reqTimes === categorize.succeedReqs) {
-                console.log('뷰 갱신 및 데이터 저장');
+            // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
+            if (categorize.resTimes === categorize.reqTimes) {
+                // 모두 성공하였으면
+                if (categorize.reqTimes === categorize.succeedReqs) {
+                    console.log('뷰 갱신 및 데이터 저장');
+                }
+                // 일부 실패하였으면
+                else {
+                    console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+                }
+                // 로컬 저장소에 분류 결과 데이터 저장
+                localStorage.setItem("resultData", JSON.stringify(window.resultData));
+                $('.ui.active.dimmer').detach();
             }
-            else {
+        })
+        .fail(() => {
+            categorize.resTimes++;
+            categorize.failedReqs++;
+            if (categorize.resTimes === categorize.reqTimes) {
                 console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+                localStorage.setItem("resultData", JSON.stringify(window.resultData));
+                $('.ui.active.dimmer').detach();
             }
-            localStorage.setItem("resultData", JSON.stringify(window.resultData));
-            $('.ui.active.dimmer').detach();
-        }
-    })
-    .fail(() => {
-        categorize.resTimes++;
-        categorize.failedReqs++;
-        if(categorize.resTimes === categorize.reqTimes) {
-            console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-            localStorage.setItem("resultData", JSON.stringify(window.resultData));
-            $('.ui.active.dimmer').detach();
-        }
-    });
+        });
 }
 
 // 조회 및 분류 함수
@@ -195,14 +192,103 @@ const actionSearch = () => {
     $(document.body).append(`<div class="ui active dimmer"><div class="ui loader"></div></div>`);
 
     console.log(startTime, endTime);
-    categorize.do({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
-    
+    // 카테고리 분류 함수 호출
+    categorize.do({ text: '', startTime: startTime, endTime: endTime, maxResults: 99999 });
+
+    // 크롬 스토리지에 검색 날짜 저장
     chrome.storage.sync.set({
         searchDate: {
             start: startTime,
             end: endTime
         }
     });
+}
+
+// 대주제 양 옆 스크롤 대용 화살표 아이콘
+const drags = {
+    _container: $('main'),
+    _left: undefined,
+    _right: undefined,
+    _isLeft: false,
+    _isRight: false,
+    _easing: "swing",
+    _delay: 250,
+    showLeft() {
+        if (this._isLeft) return;
+        const to = 0;
+        this._isLeft = true;
+        if (this.scrollH > 16
+            && this._container.find('.ui.card').attr('data-level') === "main")
+            setTimeout(() => { this._left.animate({ "left": to }, 250, this._easing) }, this._delay);
+    },
+    showRight() {
+        if (this._isRight) return;
+        const to = 0;
+        this._isRight = true;
+        if (this.scrollH < 892
+            && this._container.find('.ui.card').attr('data-level') === "main")
+            setTimeout(() => { this._right.animate({ "right": to }, 250, this._easing) }, this._delay);
+    },
+    hideLeft() {
+        if (!this._isLeft) return;
+        const to = "-48px";
+        this._isLeft = false;
+        setTimeout(() => { this._left.animate({ "left": to }, 250, this._easing) }, this._delay);
+    },
+    hideRight() {
+        if (!this._isRight) return;
+        const to = "-48px";
+        this._isRight = false;
+        setTimeout(() => { this._right.animate({ "right": to }, 250, this._easing) }, this._delay);
+    },
+    set container(v) {
+        this._container = v;
+    },
+    get container() {
+        return this._container;
+    },
+    set left(v) {
+        this._left = $(v);
+    },
+    get left() {
+        return this._left;
+    },
+    set right(v) {
+        this._right = $(v);
+    },
+    get right() {
+        return this._right;
+    },
+    set isLeft(v) {
+        this._isLeft = $(v);
+    },
+    get isLeft() {
+        return this._isLeft;
+    },
+    set isRight(v) {
+        this._isRight = $(v);
+    },
+    get isRight() {
+        return this._isRight;
+    },
+    set easing(v) {
+        this._easing = v;
+    },
+    get easing() {
+        return this._easing;
+    },
+    set delay(v) {
+        this._delay = v;
+    },
+    get delay() {
+        return this._delay;
+    },
+    get scrollH() {
+        return this._container.scrollLeft();
+    },
+    get scrollV() {
+        return this._container.scrollTop();
+    }
 }
 
 // 항목 클릭시 함수 호출
@@ -220,34 +306,36 @@ const cardClick = e => {
     console.log(level);
     console.log(target);
 
-    if(level === "main") {
+    if (level === "main") {
         rLevel = "sub";
         data = window.resultData[selected].data;
-        if(Object.keys(data).length < 1) return;
+        if (Object.keys(data).length < 1) return;
         window.catMain = selected;
         titleText = window.resultData[selected].title;
-        prevBtn.css({"display": "inline-flex"});
+        prevBtn.css({ "display": "inline-flex" });
+        drags.hideLeft();
+        drags.hideRight();
     }
-    else if(level === "sub") {
+    else if (level === "sub") {
         rLevel = "entries";
         data = window.resultData[window.catMain].data[selected];
-        if(data.length < 1) return;
+        if (data.length < 1) return;
         window.catSub = selected;
         titleText = selected;
-        prevBtn.css({"display": "inline-flex"});
+        prevBtn.css({ "display": "inline-flex" });
     }
-    else if(level === "entries" || target.parents('.item').attr('data-level') === "entries") {
-        prevBtn.css({"display": "inline-flex"});
-        if(target.parent().parent().attr('class') === "description") {
+    else if (level === "entries" || target.parents('.item').attr('data-level') === "entries") {
+        prevBtn.css({ "display": "inline-flex" });
+        if (target.parent().parent().attr('class') === "description") {
             console.log("클립보드에 복사되었습니다.", target.html());
             copyToClipboard(target.html());
         }
         else {
-            const url = target.attr('class') === "item" 
-            ? target.find('.description > a > b').html() 
-            : target.parents('.item').find('.description > a > b').html();
+            const url = target.attr('class') === "item"
+                ? target.find('.description > a > b').html()
+                : target.parents('.item').find('.description > a > b').html();
             console.log(url);
-            chrome.tabs.create({url: url, selected: false});
+            chrome.tabs.create({ url: url, selected: false });
         }
 
         return;
@@ -260,9 +348,9 @@ const cardClick = e => {
 
     console.log(data);
     title.html(titleText);
-    container.animate({opacity: 0}, 250, () => {
+    container.animate({ opacity: 0 }, 250, () => {
         cardRender(data, rLevel);
-        container.animate({opacity: 1}, 250);
+        container.animate({ opacity: 1 }, 250);
     });
 }
 
@@ -272,14 +360,14 @@ const cardRender = (data, level) => {
     const main = $('main');
     let tmp = null;
     container.empty();
-    if(Array.isArray(data)) {
-        if(level === "entries") {
+    if (Array.isArray(data)) {
+        if (level === "entries") {
             main.scrollLeft(0);
             container.attr('class', 'list-container');
-            container.css({"width": "inherit"});
-            main.css({"overflow-x": "hidden", "overflow-y": "auto"});
+            container.css({ "width": "inherit" });
+            main.css({ "overflow-x": "hidden", "overflow-y": "auto" });
             container.append('<div class="ui middle aligned selection celled list"></div>');
-            for(let i = 0; i < data.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 $('.ui.list').append(`
                 <div class="item" data-level="${level}">
                     <i class="eye icon" title="미리보기" data-html='<iframe src="${data[i].url}" width="360" height="260" frameborder="0"></iframe>'></i>
@@ -297,16 +385,16 @@ const cardRender = (data, level) => {
                 hoverable: true,
                 transition: 'fade up',
                 delay: {
-                  show: 300,
-                  hide: 800
+                    show: 300,
+                    hide: 800
                 }
-              });
+            });
         }
         else {
             main.scrollTop(0);
             container.attr('class', 'ui ten cards');
-            container.css({"width": "220%"});
-            main.css({"overflow-y": "hidden", "overflow-x": "auto"});
+            container.css({ "width": "220%" });
+            main.css({ "overflow-y": "hidden", "overflow-x": "auto" });
             for (let i = 0; i < data.length; i++) {
                 container.append(`
                 <div class="ui link card" data-level="${level}" data-cat="${data[i].catno}">
@@ -327,14 +415,14 @@ const cardRender = (data, level) => {
     }
     else {
         Object.keys(data).forEach((val, idx) => {
-            const {title, imgsrc, length} = data[val];
-            if(level === "main") {
+            const { title, imgsrc, length } = data[val];
+            if (level === "main") {
                 main.scrollTop(0);
                 container.attr('class', 'ui ten cards');
-                container.css({"width": "220%"});
-                main.css({"overflow-y": "hidden", "overflow-x": "auto"});
+                container.css({ "width": "220%" });
+                main.css({ "overflow-y": "hidden", "overflow-x": "auto" });
 
-                if(val == 0) tmp = `
+                if (val == 0) tmp = `
                 <div class="ui link card" data-level="${level}" data-cat="${val}">
                     <div class="content">
                         <div class="header">${title}</div>
@@ -365,15 +453,15 @@ const cardRender = (data, level) => {
                         </div>
                     </div>`);
 
-                    if(idx === initCard.length - 1) container.append(tmp);
+                    if (idx === initCard.length - 1) container.append(tmp);
                 }
             }
-            else if(level === "sub") {
+            else if (level === "sub") {
                 main.scrollLeft(0);
                 container.attr('class', 'ui five cards');
-                container.css({"width": "inherit"});
-                main.css({"overflow-x": "hidden", "overflow-y": "auto"});
-                
+                container.css({ "width": "inherit" });
+                main.css({ "overflow-x": "hidden", "overflow-y": "auto" });
+
                 container.append(`
                 <div class="ui link card" data-level="${level}" data-cat="${val}">
                     <div class="content">
@@ -402,25 +490,25 @@ const goPrev = e => {
     const prevLevel = target.attr('prev-level');
     let data = null;
 
-    if(prevLevel === "sub") {
+    if (prevLevel === "sub") {
         data = window.resultData[window.catMain].data;
         titleText = window.resultData[window.catMain].title;
-        prevBtn.css({"display": "inline-flex"});
+        prevBtn.css({ "display": "inline-flex" });
         prevBtn.attr('prev-level', 'main');
         console.log(data);
     }
-    else if(prevLevel === "main") {
+    else if (prevLevel === "main") {
         data = window.resultData;
         titleText = "대주제";
-        prevBtn.css({"display": "none"});
+        prevBtn.css({ "display": "none" });
         prevBtn.attr('prev-level', 'none');
         console.log(data);
     }
 
     title.html(titleText);
-    container.animate({opacity: 0}, 250, () => {
+    container.animate({ opacity: 0 }, 250, () => {
         cardRender(data, prevLevel);
-        container.animate({opacity: 1}, 250);
+        container.animate({ opacity: 1 }, 250);
     });
 }
 
@@ -463,19 +551,19 @@ const millisToDate = (millisecs, separator) => {
 
 // 날짜 출력 함수
 function dateTimePrintEngine(current, writed) {
-    var elapsed = (current.getTime() - writed.getTime())/1000;
+    var elapsed = (current.getTime() - writed.getTime()) / 1000;
     console.log(elapsed);
 
-    if(elapsed < 60.0)
+    if (elapsed < 60.0)
         return '방금 전';
-    else if(elapsed >= 60 && elapsed < 60 * 60)
+    else if (elapsed >= 60 && elapsed < 60 * 60)
         return Math.floor((elapsed / 60)) + '분 전';
-    else if(elapsed >= 60 * 60 && elapsed < 60 * 60 * 24)
+    else if (elapsed >= 60 * 60 && elapsed < 60 * 60 * 24)
         return Math.floor((elapsed / (60 * 60))) + '시간 전';
-    else if(elapsed >= 60 * 60 * 24 && elapsed < 60 * 60 * 24 * 7)
+    else if (elapsed >= 60 * 60 * 24 && elapsed < 60 * 60 * 24 * 7)
         return Math.floor((elapsed / (60 * 60 * 24))) + '일 전';
     else {
-        if(current.getFullYear() == writed.getFullYear())
+        if (current.getFullYear() == writed.getFullYear())
             return (writed.getMonth() + 1) + '월 ' + writed.getDate() + '일';
         else
             return writed.getFullYear() + '년 ' + (writed.getMonth() + 1) + '월 ' + writed.getDate() + '일';
@@ -497,4 +585,4 @@ function copyToClipboard(val) {
     t.select();
     document.execCommand('copy');
     document.body.removeChild(t);
-  }
+}
