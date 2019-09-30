@@ -6,4 +6,6 @@ import sys
 
 while True:
     url = input()
-    print(url)
+    obj = input()
+    splter = "<!toArr@comd%^&splt^&%>"
+    print(url + splter + obj)

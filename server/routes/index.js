@@ -17,7 +17,7 @@ let defaultCats = {
   6: ["생활", "노하우", "리빙", "Living", "Know-how"],
   7: ["건강", "헬스", "Health", "Well-bing"],
   8: ["자동차", "Car", "Cars", "Auto", "Autos", "Automobils", "Vehicles", "Motorbikes"],
-  9: ["기술", "IT", "컴퓨터", "스마트폰", "핸드폰", "Tech", "IT", "Computers", "Smartphone", "Cellphone"]
+  9: ["기술", "IT", "컴퓨터", "스마트폰", "핸드폰", "Tech", "technic", "IT", "Computers", "Smartphone", "Cellphone"]
 }
 
 const getMainCatNum = (dStr, cats) => {
@@ -37,7 +37,7 @@ const getMainCatNum = (dStr, cats) => {
 
 // PythonShell.run('url_wordfreq_seeker.py', options, function(err, results) {
 //   if(err) throw err;
-//   console.log("실행 결과", results);
+//   console.log("실행 결과", results[0]);
 // });
 
 // https://stackoverflow.com/questions/48347439/how-to-get-innertext-from-body-of-a-url
@@ -85,49 +85,60 @@ router.post('/do_categorize', function(req, res, next) {
   });
 });
 
-router.io.on('connection', socket => { 
-    console.log('connected');
-    socket.on('categorized', data => {
-      // Send to python!!
-      console.log('received...', data);
+const splter = "<!toArr@comd%^&splt^&%>";
+let pyshell = new PythonShell('pyscripts/categorize.py');
+this.uid = undefined;
 
+router.io.on('connection', socket => { 
+    console.log('connected!');
+    // socket.on('joinUser', uinfo => {
+    //   socket.join(uinfo);
+    // });
+    console.log("socket.....")
+    console.log(socket.id);
+    this.uid = socket.id;
+
+    socket.on('categorize', ({ url, obj }) => {
+      // Send to python!!
+      // console.log('received...', url, obj);
+      pyshell.send(url + splter + obj);
+      //pyshell.send(obj);
     });
+
     socket.on('disconnect', () => {
       console.log('disconnected!!');
     });
 });
 
+// Send to client!!!
 pyshell.on('message', res => {
-  // Send to client!!!
-  router.io.emit('categorized', {"test": "testmsg"});
-});
+  const f_tag = res.substring(0, 6);
 
-let pyshell = new PythonShell('pyscripts/test.py');
-let init = false;
+  if(f_tag === "data: ") {
+    let comp = res.split(f_tag);
+    comp.shift();
+    comp = comp.join(f_tag);
+
+    let results = comp.split(splter);
+    console.log(results);
+
+    router.io.to(this.uid).emit('categorized', {
+      main: getMainCatNum(results[0], defaultCats),
+      sub: results[1],
+      obj: results[2]
+    });
+  }
+  else {
+    console.log(res);
+  }
+  // console.log(JSON.parse(results[1]));
+  // 
+});
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-  router.io.emit('categorized', {"test": "testmsg"});
   res.render('index', { title: 'Express' });
 });
-
-router.post('/ttt', function (req, res, next) {
-  const url = req.body.url;
-
-  pyshell.send(url);
-
-  pyshell.on('message', function (message) {
-    // received a message sent from the Python script (a simple "print" statement)
-    console.log(message);
-    //res.send({"요청url": url, "받은url": message});
-    res.send("asfds");
-  });
-
-  pyshell.end(function (err) {
-    if (err) throw err;
-  });
-});
-
 
 module.exports = router;
 

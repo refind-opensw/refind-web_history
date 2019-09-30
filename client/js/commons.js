@@ -128,8 +128,31 @@ const categorize = {
 }
 
 // 분류한 데이터 소켓으로 수신
-socket.on('categorized',function(data){
-    console.log(data);
+socket.on('categorized', ({ main, sub, obj }) => {
+    console.log(main, sub, JSON.parse(obj));
+
+    let r = window.resultData[main].data[sub];
+    if (!r) window.resultData[main].data[sub] = new Array();
+    window.resultData[main].data[sub].push(JSON.parse(obj));
+    window.resultData[main].length++;
+    $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
+    categorize.resTimes++;
+    categorize.succeedReqs++;
+
+    // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
+    if (categorize.resTimes === categorize.reqTimes) {
+        // 모두 성공하였으면
+        if (categorize.reqTimes === categorize.succeedReqs) {
+            console.log('뷰 갱신 및 데이터 저장');
+        }
+        // 일부 실패하였으면
+        else {
+            console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+        }
+        // 로컬 저장소에 분류 결과 데이터 저장
+        localStorage.setItem("resultData", JSON.stringify(window.resultData));
+        $('.ui.active.dimmer').detach();
+    }
 });
 
 // 서버로 url을 분석하여 카테고리 분류 및 데이터 저장
@@ -137,45 +160,50 @@ function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
     this.obj = obj;
     this.to = to || '';
 
-    // post로 카테고리 분석 서버로 url 전송
-    $.post(`${serverUrl}do_categorize${this.to}`,
-        {
-            obj: JSON.stringify(this.obj)
-        },
-        ({ main, sub, obj }) => {
-            // 결과를 받아옴... main 은 해당 페이지의 대주제(정수), sub 는 소주제(문자열), obj 는 방문기록 페이지 데이터(url, 마지막 방문 날짜 등등 포함)
-            let r = window.resultData[main].data[sub];
-            if (!r) window.resultData[main].data[sub] = new Array();
-            window.resultData[main].data[sub].push(obj);
-            window.resultData[main].length++;
-            $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
-            categorize.resTimes++;
-            categorize.succeedReqs++;
+    socket.emit('categorize', {
+        url: obj.url,
+        obj: JSON.stringify(this.obj)
+    });
 
-            // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
-            if (categorize.resTimes === categorize.reqTimes) {
-                // 모두 성공하였으면
-                if (categorize.reqTimes === categorize.succeedReqs) {
-                    console.log('뷰 갱신 및 데이터 저장');
-                }
-                // 일부 실패하였으면
-                else {
-                    console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-                }
-                // 로컬 저장소에 분류 결과 데이터 저장
-                localStorage.setItem("resultData", JSON.stringify(window.resultData));
-                $('.ui.active.dimmer').detach();
-            }
-        })
-        .fail(() => {
-            categorize.resTimes++;
-            categorize.failedReqs++;
-            if (categorize.resTimes === categorize.reqTimes) {
-                console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-                localStorage.setItem("resultData", JSON.stringify(window.resultData));
-                $('.ui.active.dimmer').detach();
-            }
-        });
+    // // post로 카테고리 분석 서버로 url 전송
+    // $.post(`${serverUrl}do_categorize${this.to}`,
+    //     {
+    //         obj: JSON.stringify(this.obj)
+    //     },
+    //     ({ main, sub, obj }) => {
+    //         // 결과를 받아옴... main 은 해당 페이지의 대주제(정수), sub 는 소주제(문자열), obj 는 방문기록 페이지 데이터(url, 마지막 방문 날짜 등등 포함)
+    //         let r = window.resultData[main].data[sub];
+    //         if (!r) window.resultData[main].data[sub] = new Array();
+    //         window.resultData[main].data[sub].push(obj);
+    //         window.resultData[main].length++;
+    //         $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
+    //         categorize.resTimes++;
+    //         categorize.succeedReqs++;
+
+    //         // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
+    //         if (categorize.resTimes === categorize.reqTimes) {
+    //             // 모두 성공하였으면
+    //             if (categorize.reqTimes === categorize.succeedReqs) {
+    //                 console.log('뷰 갱신 및 데이터 저장');
+    //             }
+    //             // 일부 실패하였으면
+    //             else {
+    //                 console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+    //             }
+    //             // 로컬 저장소에 분류 결과 데이터 저장
+    //             localStorage.setItem("resultData", JSON.stringify(window.resultData));
+    //             $('.ui.active.dimmer').detach();
+    //         }
+    //     })
+    //     .fail(() => {
+    //         categorize.resTimes++;
+    //         categorize.failedReqs++;
+    //         if (categorize.resTimes === categorize.reqTimes) {
+    //             console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
+    //             localStorage.setItem("resultData", JSON.stringify(window.resultData));
+    //             $('.ui.active.dimmer').detach();
+    //         }
+    //     });
 }
 
 // 조회 및 분류 함수
@@ -591,8 +619,8 @@ const pad = (n, width) => {
     return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 }
 
-// https://zetawiki.com/wiki/JavaScript_클립보드로_복사하기
 // 클립보드 복사 함수
+// https://zetawiki.com/wiki/JavaScript_클립보드로_복사하기
 function copyToClipboard(val) {
     let t = document.createElement("textarea");
     document.body.appendChild(t);
@@ -600,4 +628,12 @@ function copyToClipboard(val) {
     t.select();
     document.execCommand('copy');
     document.body.removeChild(t);
+}
+
+// uuid 생성 함수
+// https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+function uuidv4() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
 }

@@ -13,9 +13,19 @@ $(document).ready(e => {
         window.resultData = JSON.parse(localStorage.getItem("resultData"));
     }
 
-    // 크롬 스토리지에 검색 날짜 저장 및 불러오기
+    // 크롬 스토리지에 사용자 고유 아이디, 검색 날짜 저장 및 불러오기
     chrome.storage.sync.get(data => {
-        const { searchDate } = data;
+        const { searchDate, refindGUID } = data;
+        
+        // if (!refindGUID) {
+        //     const id = uuidv4();
+        //     chrome.storage.sync.set({refindGUID: id});
+        //     socket.emit('joinUser', id);
+        // }
+        // else {
+        //     socket.emit('joinUser', refindGUID);
+        // }
+
         if (!searchDate) {
             let s = new Date();
             let e = new Date();
