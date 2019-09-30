@@ -100,7 +100,7 @@ router.io.on('connection', socket => {
 
     socket.on('categorize', ({ url, obj }) => {
       // Send to python!!
-      // console.log('received...', url, obj);
+      console.log('received...', url, obj);
       pyshell.send(url + splter + obj);
       //pyshell.send(obj);
     });

@@ -140,7 +140,8 @@ while 1:
              pass
     if cnt == 10:
         # print("URL 크롤링 불가")
-        break
+        print("data: " + "기타" + splter + "미분류" + splter + obj)
+        continue
     # 한/영 문서 구분 함수
     whatlang = isEnglishOrKorean(main_text)
     # 형태소를 문장단위 리스트로 변환해서 담을 변수
