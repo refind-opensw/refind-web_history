@@ -1,9 +1,6 @@
 // 서버 주소(각자의 개발 환경에 맞춰 세팅할 것)
 const serverUrl = "http://dev.chsain.com:3000/";
 
-// 파이썬 분류 결과를 주고 받기 위한 소켓 선언
-let socket = io.connect(serverUrl);
-
 // 초기 대주제 데이터 구성
 // 뉴스, 스포츠, 게임, 음악, 연예, 생활/노하우, 건강, 자동차, IT/기술, 기타
 const initCard = [
@@ -126,11 +123,6 @@ const categorize = {
         return this._failedReqs;
     }
 }
-
-// 분류한 데이터 소켓으로 수신
-socket.on('categorized',function(data){
-    console.log(data);
-});
 
 // 서버로 url을 분석하여 카테고리 분류 및 데이터 저장
 function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
