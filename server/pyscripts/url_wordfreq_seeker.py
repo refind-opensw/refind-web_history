@@ -86,7 +86,6 @@ def elseFreqToDataFrame(text, stop):
         tagged.append(nltk.pos_tag(clean_tokens[i]))
         #명사 분류
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
-
     return allnoun
 
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,29 +11,37 @@
     <link rel="stylesheet" href="uilib/semantic_ui/calendar.min.css">
     <script src="uilib/semantic_ui/calendar.min.js"></script>
     <link rel="stylesheet" href="css/main.css">
+    <script src="js/jquery.mousewheel.min.js"></script>
     <script src="js/commons.js"></script>
     <script src="js/main.js"></script>
     <title>찾아드림</title>
 </head>
+
 <body>
+    <!-- <div class="ui active dimmer">
+        <div class="ui loader"></div>
+    </div> -->
+    
     <header>
         <div>
-            <h2>대주제</h2>
+            <h2><i id="go_prev" class="left chevron icon divider" prev-level="none"></i><span>대주제</span></h2>
             <i class="cog icon large"></i>
         </div>
-        <span class="search-date"><p class="s">0000.00.00</p>&nbsp;~&nbsp;<p class="e">0000.00.00</p></span>
+        <span class="search-date">
+            <p class="s">0000.00.00</p>&nbsp;~&nbsp;<p class="e">0000.00.00</p>
+        </span>
     </header>
 
     <main>
-        <div class="ui ten cards">
-
-        </div>
+        <i id="drag_left" class="left big chevron icon divider action-drags" prev-level="none"></i>
+        <i id="drag_right" class="right big chevron icon divider action-drags" prev-level="none"></i>
+        <div class="ui ten cards"></div>
     </main>
 
     <footer>
         <div class="divider"></div>
         <div id="searchbox" class="ui form">
-            <div class="three fields"> 
+            <div class="three fields">
                 <div class="six wide field">
                     <label>시작날짜</label>
                     <div class="ui calendar" id="date_from">
@@ -42,7 +51,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="six wide field">
                     <label>종료날짜</label>
                     <div class="ui calendar" id="date_to">
@@ -61,4 +70,5 @@
         </div>
     </footer>
 </body>
+
 </html>

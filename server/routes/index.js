@@ -39,9 +39,28 @@ router.post('/getbodytext', function(req, res, next) {
   });
 });
 
+router.post('/do_categorize', function(req, res, next) {
+  /* PythonShell.run('url_wordfreq_seeker.py', options, function(err, results) {
+    if(err) throw err;
+    console.log("실행 결과", results);
+    //...
+    res.send(results);
+  }); */
+  const obj = req.body.obj;
+  console.log(obj)
+
+  res.send({main: getRandom(0, 9), sub: `subcat_${getRandom(0, 15)}`, obj: JSON.parse(obj)});
+});
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
 module.exports = router;
+
+function getRandom(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min; //최댓값도 포함, 최솟값도 포함
+}

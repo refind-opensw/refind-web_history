@@ -2,8 +2,21 @@
 $(document).ready(e => {
     console.log("**** document loaded ****", "main.js");
 
+    // 초기 분류 데이터 값 세팅
+    if (!localStorage.getItem("resultData")) {
+        const tmp = { resultData: {} };
+        console.log(checkResultData(initCard, tmp));
+    }
+    else {
+        window.resultData = JSON.parse(localStorage.getItem("resultData"));
+        console.log(checkResultData(initCard, window));
+        window.resultData = JSON.parse(localStorage.getItem("resultData"));
+    }
+
+    // 크롬 스토리지에 검색 날짜 저장 및 불러오기
     chrome.storage.sync.get(data => {
-        if(!data.searchDate) {
+        const { searchDate } = data;
+        if (!searchDate) {
             let s = new Date();
             let e = new Date();
             s.setHours(0);
@@ -18,16 +31,17 @@ $(document).ready(e => {
             $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
             $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
 
-            setSaveData({
+            chrome.storage.sync.set({
                 searchDate: {
                     start: s.getMilliseconds(),
                     end: s.getMilliseconds()
                 }
-            });
+            }, () => { window.searchDate = searchDate });
         }
         else {
-            let s = new Date(data.searchDate.start);
-            let e = new Date(data.searchDate.end);
+            let s = new Date(searchDate.start);
+            let e = new Date(searchDate.end);
+            window.searchDate = searchDate;
             console.log(s, e);
             $('.search-date > .s').html(millisToDate(s.getTime(), '.'));
             $('.search-date > .e').html(millisToDate(e.getTime(), '.'));
@@ -36,34 +50,63 @@ $(document).ready(e => {
         }
     });
 
-    $('main > .ui.cards').empty();
-    for (let i = 0; i < initCard.length; i++) {
-        $('main > .ui.cards').append(`
-        <div class="ui link card">
-            <div class="content">
-                <div class="header">${initCard[i].title}</div>
-            </div>
-            ${initCard[i].catno === 0 ? '' : `
-                <div class="content">
-                    <img src="${initCard[i].imgsrc}" alt="${initCard[i].title} 의 이미지" width="96px">
-                </div>
-            `}
-            <div class="extra content" data-cat="${initCard[i].catno}">
-                <p><span>NaN</span>건 검색됨</p>
-            </div>
-        </div>
-        `);
-    }
+    // 초기 저장된 분류 데이터 렌더링
+    cardRender(window.resultData, "main");
 
+    // 항목에 클릭 이벤트 등록
+    $(document).on('click', '.ui.link.card', cardClick);
+    $(document).on('click', '.ui.list > .item', cardClick);
+    $(document).on('click', '#go_prev', goPrev);
+
+    // 대주제 스크롤 화살표 아이콘 이벤트 등록
+    drags.container = $('main');
+    drags.left = '#drag_left';
+    drags.right = '#drag_right';
+    drags.container.mouseenter(() => { drags.showLeft(); drags.showRight(); });
+    drags.container.mouseleave(() => { drags.hideLeft(); drags.hideRight(); });
+    drags.container.scroll(() => {
+        if (drags.container.scrollLeft() <= 16) drags.hideLeft();
+        else drags.showLeft();
+        if (drags.container.scrollLeft() >= 892) drags.hideRight();
+        else drags.showRight();
+    });
+
+    // 세로 스크롤 시 가로 스크롤로 바인딩
+    // https://cdnjs.cloudflare.com/ajax/libs/jquery-mousewheel/3.1.13/jquery.mousewheel.min.js
+    // https://css-tricks.com/snippets/jquery/horz-scroll-with-mouse-wheel/
+    drags.container.mousewheel(function (event, delta) {
+        this.scrollLeft -= (delta * 1);
+        event.preventDefault();
+    });
+    drags.left.mousedown(() => {
+        const loop = setInterval(() => {
+            drags.container.animate({
+                scrollLeft: '-=25'
+            }, 0, 'linear');
+            if (drags.container.scrollLeft() <= 16) clearInterval(loop);
+            else drags.left.mouseup(() => clearInterval(loop));
+        }, 50);
+    });
+    drags.right.mousedown(() => {
+        const loop = setInterval(() => {
+            drags.container.animate({
+                scrollLeft: '+=25'
+            }, 0, 'linear');
+            if (drags.container.scrollLeft() >= 892) clearInterval(loop);
+            else drags.right.mouseup(() => clearInterval(loop));
+        }, 50);
+    })
+
+    // 검색 날짜 선택기 초기화 표시 형식 지정
     $('#date_from').calendar({
         type: 'date',
         monthFirst: false,
         formatter: {
             date: function (date, settings) {
                 if (!date) return '';
-                var day = date.getDate();
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
                 return `${year}년 ${month}월 ${day}일`;
             }
         }
@@ -74,71 +117,14 @@ $(document).ready(e => {
         formatter: {
             date: function (date, settings) {
                 if (!date) return '';
-                var day = date.getDate();
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
                 return `${year}년 ${month}월 ${day}일`;
             }
         }
     });
 
+    // 검색 및 분류 버튼 클릭 이벤트 지정
     $(document).on('click', "#action_search", actionSearch);
 });
-
-const actionSearch = () => {
-    const s = $('#date_from').calendar('get date');
-    const e = $('#date_to').calendar('get date');
-    s.setHours(0);
-    s.setMinutes(0);
-    s.setSeconds(0);
-    s.setMilliseconds(0);
-    e.setHours(23);
-    e.setMinutes(59);
-    e.setSeconds(59);
-    e.setMilliseconds(999);
-
-    const startTime = s.getTime();
-    const endTime = e.getTime();
-
-    $('.search-date > .s').html(millisToDate(startTime, '.'));
-    $('.search-date > .e').html(millisToDate(endTime, '.'));
-
-    console.log(startTime, endTime);
-    getTextTestFunc({text: '', startTime: startTime, endTime: endTime, maxResults: 99999});
-    
-    chrome.storage.sync.set({
-        searchDate: {
-            start: startTime,
-            end: endTime
-        }
-    })
-}
-
-const sendUrlAndGet = url => {
-    $.post("http://dev.chsain.com:3000/getbodytext", {
-        url: url
-    }, data => {
-        console.log(data);
-    })
-        .fail(msg => {
-            alert("error!");
-        })
-}
-
-// url로 bodytext 가져오기
-const getBodyTxtFromUrl = url => {
-    // getHistory();
-    $.get(url, {}, data => {
-        console.log(extTextFromHtmls(data, true).trim());
-    });
-}
-
-// 방문기록 가져와서 텍스트 추출 (테스트 함수)
-const getTextTestFunc = obj => {
-    getHistory(obj, data => {
-        data.forEach(page => {
-            console.log(`${page.url} ==> `)
-            getBodyTxtFromUrl(page.url);
-        });
-    });
-}

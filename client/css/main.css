@@ -45,25 +45,144 @@ footer {
 footer > .divider {
     margin: 8px auto 16px auto;
     width: calc(100% - 32px);
-    border-top: 1px solid #d4d4d5;
+    border-top: 1px solid #d4d4d4;
 }
 
 .ui.cards {
     width: 220%;
+    height: 270px;
     padding: 16px;
+    user-select: none;
 }
 
 .ui.card {
     width: 108px;
 }
 
+.ui.card[data-level="sub"] {
+    height: 72px;
+    transition: all .2s;
+}
+
+.ui.card[data-level="sub"]:hover {
+    background-color: #ececec;
+}
+
+.ui.card[data-level="sub"]:active {
+    background-color: #dfdfdf;
+}
+
+.ui.card[data-level="sub"] > .content {
+    padding-top: 10px;
+    padding-bottom: 4px;
+}
+
+.ui.card[data-level="sub"] > .extra.content {
+    border-top: none !important;
+    padding-top: 6px;
+    padding-bottom: 10px;
+}
+
+.ui.card > .content {
+    pointer-events: none;
+}
+
+.ui.card > .extra.content {
+    pointer-events: none;
+}
+
 .ui.card .content img, .ui.cards > .card .content img  {
     margin: 0 auto 0 auto;
     display: flex;
+    pointer-events: none;
 }
 
 #searchbox {
     /*margin-left: 134px;*/
     padding: 0 16px 0 16px;
     width: 100%;
+}
+
+.ui.list > .item {
+    padding: 8px !important;
+}
+
+.ui.list > .item:active:hover {
+    background-color: #ececec !important;
+}
+
+.ui.list > .item:active {
+    background-color: #dfdfdf !important;
+}
+
+.list-container {
+    height: 270px;
+    padding: 16px;
+}
+
+.item > .content > .header {
+    overflow: hidden;
+    display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 574px;
+}
+
+.desc-container {
+    display: flex;
+}
+
+.description {
+    overflow: hidden;
+    display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 574px;
+    margin-top: 4px;
+}
+
+.lst-date {
+    width: 108px;
+    text-align: right;
+}
+
+#go_prev {
+    display: none;
+    cursor: pointer;
+    color: #d4d4d4;
+    transition: all .2s;
+}
+
+#go_prev:hover {
+    color: #000000;
+}
+
+.ui.popup.visible {
+    /* width: 320px !important;
+    height: 320px !important; */
+}
+
+.action-drags {
+    position: absolute;
+    z-index: 999;
+    font-size: 42px !important;
+    cursor: pointer;
+    color: #ffffff;
+    text-shadow: 0 0 2px #000000;
+    transition: all .2s
+}
+
+.action-drags:hover {
+    text-shadow: 0 0 3px #000000;
+    transform: scale(1.2);
+}
+
+#drag_left {
+    top: 210px;
+    left: -48px;
+}
+
+#drag_right {
+    top: 210px;
+    right: -48px;
 }
