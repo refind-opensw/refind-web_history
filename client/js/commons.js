@@ -4,6 +4,26 @@ const serverUrl = "http://dev.chsain.com:3000/";
 // 파이썬 분류 결과를 주고 받기 위한 소켓 선언
 let socket = io.connect(serverUrl);
 
+// 분산 처리 시스템을 위한 소켓 생성
+// let sockets = [
+//     {
+//         reqUrl: "http://dev.chsain.com:3000",
+//         socket: new io.connect("http://dev.chsain.com:3000")
+//     },
+//     {
+//         reqUrl: "http://dev.chsain.com:3001",
+//         socket: new io.connect("http://dev.chsain.com:3001")
+//     },
+//     {
+//         reqUrl: "http://dev.chsain.com:3002",
+//         socket: new io.connect("http://dev.chsain.com:3002")
+//     },
+//     {
+//         reqUrl: "http://dev.chsain.com:3003",
+//         socket: new io.connect("http://dev.chsain.com:3003")
+//     }
+// ]
+
 // 초기 대주제 데이터 구성
 // 뉴스, 스포츠, 게임, 음악, 연예, 생활/노하우, 건강, 자동차, IT/기술, 기타
 const initCard = [
@@ -81,10 +101,12 @@ const categorize = {
     _resTimes: 0,
     _succeedReqs: 0,
     _failedReqs: 0,
+    _dataSize: 0,
     do(obj) {
         // 방문기록을 가져와서 url을 카테고리 분석 함수에 바동기 방식으로 전달
         getHistory(obj, data => {
-            this._reqTimes = data.length;
+            this._dataSize = data.length
+            this._reqTimes = 0;
             this._resTimes = 0;
             this._succeedReqs = 0;
             this._failedReqs = 0;
@@ -94,12 +116,32 @@ const categorize = {
                     window.resultData[catno] || (window.resultData[catno] = { data: {}, title: title, imgsrc: imgsrc, length: 0 });
                 });
             }
-            data.forEach(page => {
-                console.log(`${page.url} ==> `);
+            let i = 0;
+            let thread = 0;
+            const testinterval = setInterval(() => {
+                if(i >= data.length) clearInterval(testinterval);
+                console.log(`${data[i].url} ==> `);
                 // 카테고리 분석 함수 호출
-                new CoreCategorize(page);
-            });
+                if(i > 3) thread = 0;
+                new CoreCategorize(data[i], thread);
+                this._reqTimes++;
+                i++
+                thread++;
+            }, 10);
+
+            // data.forEach(page => {
+            //     console.log(`${page.url} ==> `);
+            //     // 카테고리 분석 함수 호출
+            //     new CoreCategorize(page);
+            // });
         });
+        const checkSockError = setInterval(() => {
+            if(!socket.connected) {
+                alert("서버 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.");
+                $('.ui.active.dimmer').detach();
+                clearInterval(checkSockError);
+            }
+        }, 3000);
     },
     set reqTimes(v) {
         this._reqTimes = v;
@@ -124,6 +166,12 @@ const categorize = {
     },
     get failedReqs() {
         return this._failedReqs;
+    },
+    set dataSize(v) {
+        this._dataSize = v;
+    },
+    get dataSize() {
+        return this._dataSize;
     }
 }
 
@@ -131,13 +179,22 @@ const categorize = {
 socket.on('categorized', ({ main, sub, obj }) => {
     console.log(main, sub, JSON.parse(obj));
 
-    let r = window.resultData[main].data[sub];
-    if (!r) window.resultData[main].data[sub] = new Array();
-    window.resultData[main].data[sub].push(JSON.parse(obj));
-    window.resultData[main].length++;
-    $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
-    categorize.resTimes++;
-    categorize.succeedReqs++;
+    // 요청에 대한 응답이 실패한 경우(타임 아웃 등)
+    if(main === "failed" && sub === "failed") {
+        console.log(obj);
+        categorize.resTimes++;
+        categorize.failedReqs++;
+    }
+    // 성공했을 경우
+    else {
+        let r = window.resultData[main].data[sub];
+        if (!r) window.resultData[main].data[sub] = new Array();
+        window.resultData[main].data[sub].push(JSON.parse(obj));
+        window.resultData[main].length++;
+        $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
+        categorize.resTimes++;
+        categorize.succeedReqs++;
+    }
 
     // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
     if (categorize.resTimes === categorize.reqTimes) {
@@ -158,11 +215,13 @@ socket.on('categorized', ({ main, sub, obj }) => {
 // 서버로 url을 분석하여 카테고리 분류 및 데이터 저장
 function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
     this.obj = obj;
-    this.to = to || '';
+    this.to = to || 0;
 
     socket.emit('categorize', {
         url: obj.url,
-        obj: JSON.stringify(this.obj)
+        obj: JSON.stringify(this.obj),
+        thread: to,
+        tmout: 30     
     });
 
     // // post로 카테고리 분석 서버로 url 전송

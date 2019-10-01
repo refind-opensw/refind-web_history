@@ -2,7 +2,7 @@ var express = require('express');
 const cheerio = require('cheerio');
 const request = require('request');
 const socket_io = require('socket.io')
-const {PythonShell} = require('python-shell');
+const { PythonShell } = require('python-shell');
 var router = express.Router();
 
 var io = socket_io()
@@ -23,7 +23,7 @@ let defaultCats = {
 const getMainCatNum = (dStr, cats) => {
   let result = "0" // 초기 값은 기타 카테고리 
   Object.keys(cats).forEach(e => {
-    if(cats[e].includes(dStr)) result = e;
+    if (cats[e].includes(dStr)) result = e;
   });
   return result;
 }
@@ -44,16 +44,16 @@ const getMainCatNum = (dStr, cats) => {
 const getDOMFromURI = uri => {
   return new Promise((resolve, reject) => {
     request(uri, (err, res, body) => {
-      if(err) {
+      if (err) {
         return reject(err);
       }
       return resolve(cheerio.load(body));
     });
-   });
+  });
 }
 
 //https://webisfree.com/2015-12-22/[%EC%9E%90%EB%B0%94%EC%8A%A4%ED%81%AC%EB%A6%BD%ED%8A%B8]-%EC%A0%95%EA%B7%9C%ED%91%9C%ED%98%84%EC%8B%9D%EC%9D%84-%EC%82%AC%EC%9A%A9%ED%95%98%EC%97%AC-%ED%83%9C%EA%B7%B8%EB%A7%8C-%EC%A0%9C%EA%B1%B0%ED%95%98%EA%B8%B0
-router.post('/getbodytext', function(req, res, next) {
+router.post('/getbodytext', function (req, res, next) {
   const url = req.body.url;
   request(url, function (error, response, body) {
     console.log('body:', body); // Print the HTML for the Google homepage.
@@ -63,7 +63,7 @@ router.post('/getbodytext', function(req, res, next) {
   });
 });
 
-router.post('/do_categorize', function(req, res, next) {
+router.post('/do_categorize', function (req, res, next) {
   const obj = JSON.parse(req.body.obj);
   console.log(obj)
 
@@ -73,67 +73,94 @@ router.post('/do_categorize', function(req, res, next) {
     scriptPath: 'pyscripts/',
     args: [obj.url, '값1', '값2']
   }
-  
-  PythonShell.run('url_wordfreq_seeker.py', options, function(err, results) {
-    if(err) {
+
+  PythonShell.run('url_wordfreq_seeker.py', options, function (err, results) {
+    if (err) {
       console.log("ERROR");
     }
     else {
       console.log("실행 결과", results);
-      res.send({main: getMainCatNum(results[0], defaultCats), sub: `subcat_${getRandom(0, 15)}`, obj: obj});
+      res.send({ main: getMainCatNum(results[0], defaultCats), sub: `subcat_${getRandom(0, 15)}`, obj: obj });
     }
   });
 });
 
 const splter = "<!toArr@comd%^&splt^&%>";
-let pyshell = new PythonShell('pyscripts/categorize.py');
+let pyshell = [
+  new PythonShell('pyscripts/categorize.py'),
+  new PythonShell('pyscripts/categorize.py'),
+  new PythonShell('pyscripts/categorize.py'),
+  new PythonShell('pyscripts/categorize.py')
+];
 this.uid = undefined;
+this.tRequests = [{}];
 
-router.io.on('connection', socket => { 
-    console.log('connected!');
-    // socket.on('joinUser', uinfo => {
-    //   socket.join(uinfo);
+router.io.on('connection', socket => {
+  console.log('connected!');
+  // socket.on('joinUser', uinfo => {
+  //   socket.join(uinfo);
+  // });
+  console.log("socket.....")
+  console.log(socket.id);
+  this.uid = socket.id;
+
+  socket.on('categorize', ({ url, obj, thread, tmout }) => {
+    // Send to python!!
+    console.log('received...', url, obj);
+    pyshell[thread].send(url + splter + obj);
+
+    // 타임아웃 추가
+    // this.tRequests.push({
+    //   tmout: setTimeout(() => {
+    //     console.log('ERR_TIMEOUT::' + url);
+    //     router.io.to(this.uid).emit('categorized', {
+    //       main: "failed",
+    //       sub: "failed",
+    //       obj: `{"err": "ERR_TIMEOUT::${url}"}`
+    //     });
+    //   }, tmout),
+
+    //   id: JSON.parse(obj)["id"]
     // });
-    console.log("socket.....")
-    console.log(socket.id);
-    this.uid = socket.id;
+  });
 
-    socket.on('categorize', ({ url, obj }) => {
-      // Send to python!!
-      console.log('received...', url, obj);
-      pyshell.send(url + splter + obj);
-      //pyshell.send(obj);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('disconnected!!');
-    });
+  socket.on('disconnect', () => {
+    console.log('disconnected!!');
+  });
 });
 
 // Send to client!!!
-pyshell.on('message', res => {
-  const f_tag = res.substring(0, 6);
+for (let i = 0; i < pyshell.length; i++) {
+  pyshell[i].on('message', res => {
+    const f_tag = res.substring(0, 6);
 
-  if(f_tag === "data: ") {
-    let comp = res.split(f_tag);
-    comp.shift();
-    comp = comp.join(f_tag);
+    if (f_tag === "data: ") {
+      let comp = res.split(f_tag);
+      comp.shift();
+      comp = comp.join(f_tag);
 
-    let results = comp.split(splter);
-    console.log(results);
+      let results = comp.split(splter);
+      console.log(results);
 
-    router.io.to(this.uid).emit('categorized', {
-      main: getMainCatNum(results[0], defaultCats),
-      sub: results[1],
-      obj: results[2]
-    });
-  }
-  else {
-    console.log(res);
-  }
-  // console.log(JSON.parse(results[1]));
-  // 
-});
+      // 타임아웃 제어
+      // const articleId = JSON.parse(results[2])["id"];
+      // const currIdx = this.tRequests.findIndex(e => e.id === articleId);
+      // clearTimeout(this.tRequests[currIdx].tmout);
+      // this.tRequests.splice(currIdx, 1);
+
+      router.io.to(this.uid).emit('categorized', {
+        main: getMainCatNum(results[0], defaultCats),
+        sub: results[1],
+        obj: results[2]
+      });
+    }
+    else {
+      console.log(res);
+    }
+    // console.log(JSON.parse(results[1]));
+    // 
+  });
+}
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
