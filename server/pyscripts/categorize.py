@@ -98,6 +98,7 @@ def makeTopicword_with_LDA(X):
     return model.topic_word_
 
 #Start
+splter = "<!toArr@comd%^&splt^&%>"
 
 # 모델 프리 로딩
 print("로오딩중!")
@@ -110,8 +111,18 @@ cv = TfidfVectorizer(min_df=0.025)
 print("로오딩완료!")
 while 1:
 
-    # url 정보 저장
-    url = input()
+    # url, obj 정보 저장
+    data = input()
+    datas = data.split(splter, maxsplit=4)
+    hId = datas[0]
+    tmout = datas[1]
+    url = datas[2]
+    obj = datas[3]
+
+    # 타임아웃 등록
+    print("tmrg: " + hId + splter + tmout)
+    print("현재 분석 중..." + url + " && " + obj)
+    
     if url == "exit":
         break
     # 시작 시간 저장
@@ -182,7 +193,7 @@ while 1:
     # 토픽 체크용 디버그 출력
     for i, topic_dist in enumerate(topic_word):
         topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
-        print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+        # print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     if whatlang == "k":
         our_topics = ["뉴스","소식","발표","시사","국제","국내"
@@ -204,8 +215,8 @@ while 1:
         ,"테크","기술"]
         usingmodel = w2vmodelko
     else:
-        our_topics = ["sports","game","music","broadcasting","health","vehicle","technic","history","trip","travel"
-                      ,"car","animal","food","computer","automobile","news","life","geological","area"]
+        our_topics = ["Sports","Game","Music","Broadcasting","Health","Vehicle","Tech","technic","History","Trip","Travel"
+                      ,"Car","Animal","Food","Computer","Automobile","News","Life","Geological","Area"]
         usingmodel = w2vmodelen
 
     # 변수 초기화
@@ -246,10 +257,11 @@ while 1:
                     pass
     if semi_topic == "":
         semi_topic="미분류"
-    print(len(cv.vocabulary_))
-    print(max_similarity)
-    print(top_topic)
-    print(semi_topic)
+    # print(len(cv.vocabulary_))
+    # print(max_similarity)
+    # print(top_topic)
+    # print(semi_topic)
+    print("data: " + top_topic + splter + semi_topic + splter + obj)
     # 현재시각 - 시작시간 = 실행 시간
     end = time.time()
     print("time :", end - start)
