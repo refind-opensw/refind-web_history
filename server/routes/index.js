@@ -88,8 +88,6 @@ router.post('/do_categorize', function (req, res, next) {
 const splter = "<!toArr@comd%^&splt^&%>";
 let pyshell = [
   new PythonShell('pyscripts/categorize.py'),
-  new PythonShell('pyscripts/categorize.py'),
-  new PythonShell('pyscripts/categorize.py'),
   new PythonShell('pyscripts/categorize.py')
 ];
 this.uid = undefined;
@@ -104,24 +102,10 @@ router.io.on('connection', socket => {
   console.log(socket.id);
   this.uid = socket.id;
 
-  socket.on('categorize', ({ url, obj, thread, tmout }) => {
+  socket.on('categorize', ({ hId, url, obj, thread, tmout }) => {
     // Send to python!!
-    console.log('received...', url, obj);
-    pyshell[thread].send(url + splter + obj);
-
-    // 타임아웃 추가
-    // this.tRequests.push({
-    //   tmout: setTimeout(() => {
-    //     console.log('ERR_TIMEOUT::' + url);
-    //     router.io.to(this.uid).emit('categorized', {
-    //       main: "failed",
-    //       sub: "failed",
-    //       obj: `{"err": "ERR_TIMEOUT::${url}"}`
-    //     });
-    //   }, tmout),
-
-    //   id: JSON.parse(obj)["id"]
-    // });
+    console.log('received...', url, obj, thread);
+    pyshell[thread].send(hId + splter + tmout + splter + url + splter + obj);
   });
 
   socket.on('disconnect', () => {
@@ -133,25 +117,41 @@ router.io.on('connection', socket => {
 for (let i = 0; i < pyshell.length; i++) {
   pyshell[i].on('message', res => {
     const f_tag = res.substring(0, 6);
+    let comp = res.split(f_tag);
+    comp.shift();
+    comp = comp.join(f_tag);
+    let results = comp.split(splter);
 
     if (f_tag === "data: ") {
-      let comp = res.split(f_tag);
-      comp.shift();
-      comp = comp.join(f_tag);
-
-      let results = comp.split(splter);
       console.log(results);
-
       // 타임아웃 제어
-      // const articleId = JSON.parse(results[2])["id"];
-      // const currIdx = this.tRequests.findIndex(e => e.id === articleId);
-      // clearTimeout(this.tRequests[currIdx].tmout);
-      // this.tRequests.splice(currIdx, 1);
+      const articleId = JSON.parse(results[2])["id"];
+      const currIdx = this.tRequests.findIndex(e => e.id === articleId);
+      clearTimeout(this.tRequests[currIdx].tmout);
+      this.tRequests.splice(currIdx, 1);
 
       router.io.to(this.uid).emit('categorized', {
         main: getMainCatNum(results[0], defaultCats),
         sub: results[1],
         obj: results[2]
+      });
+    }
+    else if(f_tag === "tmrg: ") {
+      console.log(results);
+      const hId = results[0] + "";
+      const tmout = parseInt(results[1]);
+      // 타임아웃 추가
+      this.tRequests.push({
+        tmout: setTimeout(() => {
+          console.log('ERR_TIMEOUT::' + hId);
+          router.io.to(this.uid).emit('categorized', {
+            main: "failed",
+            sub: "failed",
+            obj: `{"err": "ERR_TIMEOUT::${hId}"}`
+          });
+        }, tmout),
+
+        id: hId
       });
     }
     else {

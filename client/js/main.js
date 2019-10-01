@@ -13,9 +13,9 @@ $(document).ready(e => {
         window.resultData = JSON.parse(localStorage.getItem("resultData"));
     }
 
-    // 크롬 스토리지에 사용자 고유 아이디, 검색 날짜 저장 및 불러오기
+    // 크롬 스토리지에 검색 날짜 저장 및 불러오기
     chrome.storage.sync.get(data => {
-        const { searchDate, refindGUID } = data;
+        const { searchDate } = data;
         
         // if (!refindGUID) {
         //     const id = uuidv4();
@@ -85,7 +85,7 @@ $(document).ready(e => {
     // https://cdnjs.cloudflare.com/ajax/libs/jquery-mousewheel/3.1.13/jquery.mousewheel.min.js
     // https://css-tricks.com/snippets/jquery/horz-scroll-with-mouse-wheel/
     drags.container.mousewheel(function (event, delta) {
-        this.scrollLeft -= (delta * 1);
+        this.scrollLeft -= (delta * 25);
         event.preventDefault();
     });
     drags.left.mousedown(() => {
@@ -95,7 +95,7 @@ $(document).ready(e => {
             }, 0, 'linear');
             if (drags.container.scrollLeft() <= 16) clearInterval(loop);
             else drags.left.mouseup(() => clearInterval(loop));
-        }, 50);
+        }, 30);
     });
     drags.right.mousedown(() => {
         const loop = setInterval(() => {
@@ -104,7 +104,7 @@ $(document).ready(e => {
             }, 0, 'linear');
             if (drags.container.scrollLeft() >= 892) clearInterval(loop);
             else drags.right.mouseup(() => clearInterval(loop));
-        }, 50);
+        }, 30);
     })
 
     // 검색 날짜 선택기 초기화 표시 형식 지정

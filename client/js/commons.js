@@ -110,7 +110,7 @@ const categorize = {
             this._resTimes = 0;
             this._succeedReqs = 0;
             this._failedReqs = 0;
-            if (this._reqTimes > 0) {
+            if (this._dataSize > 0) {
                 window.resultData = {};
                 initCard.forEach(({ catno, title, imgsrc }) => {
                     window.resultData[catno] || (window.resultData[catno] = { data: {}, title: title, imgsrc: imgsrc, length: 0 });
@@ -119,10 +119,10 @@ const categorize = {
             let i = 0;
             let thread = 0;
             const testinterval = setInterval(() => {
-                if(i >= data.length) clearInterval(testinterval);
+                if(i >= data.length - 1) clearInterval(testinterval);
                 console.log(`${data[i].url} ==> `);
                 // 카테고리 분석 함수 호출
-                if(i > 3) thread = 0;
+                if(thread > 1) thread = 0;
                 new CoreCategorize(data[i], thread);
                 this._reqTimes++;
                 i++
@@ -218,10 +218,11 @@ function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
     this.to = to || 0;
 
     socket.emit('categorize', {
+        hId: obj.id,
         url: obj.url,
         obj: JSON.stringify(this.obj),
         thread: to,
-        tmout: 30     
+        tmout: 12     
     });
 
     // // post로 카테고리 분석 서버로 url 전송
@@ -307,7 +308,7 @@ const drags = {
     _isLeft: false,
     _isRight: false,
     _easing: "swing",
-    _delay: 250,
+    _delay: 75,
     showLeft() {
         if (this._isLeft) return;
         const to = 0;
@@ -406,6 +407,7 @@ const cardClick = e => {
         data = window.resultData[selected].data;
         if (Object.keys(data).length < 1) return;
         window.catMain = selected;
+        window.mainScrollPos = $('main').scrollLeft();
         titleText = window.resultData[selected].title;
         prevBtn.css({ "display": "inline-flex" });
         drags.hideLeft();
@@ -418,6 +420,7 @@ const cardClick = e => {
         data = window.resultData[window.catMain].data[selected];
         if (data.length < 1) return;
         window.catSub = selected;
+        window.subScrollPos = $('main').scrollTop();
         titleText = selected;
         prevBtn.css({ "display": "inline-flex" });
     }
@@ -601,7 +604,7 @@ const goPrev = e => {
         prevBtn.attr('prev-level', 'none');
         // 대주제로 돌아갈 때 세로 - 가로 스크롤 재 바인딩
         drags.container.mousewheel(function (event, delta) {
-            this.scrollLeft -= (delta * 1);
+            this.scrollLeft -= (delta * 25);
             event.preventDefault();
         });
         console.log(data);
@@ -610,6 +613,12 @@ const goPrev = e => {
     title.html(titleText);
     container.animate({ opacity: 0 }, 250, () => {
         cardRender(data, prevLevel);
+        if(prevLevel === "sub") {
+            $('main').scrollTop(window.subScrollPos);
+        }
+        else if(prevLevel === "main") {
+            $('main').scrollLeft(window.mainScrollPos);
+        }
         container.animate({ opacity: 1 }, 250);
     });
 }

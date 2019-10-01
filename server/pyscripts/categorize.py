@@ -114,11 +114,15 @@ while 1:
 
     # url, obj 정보 저장
     data = input()
-    datas = data.split(splter, maxsplit=1)
-    url = datas[0]
-    obj = datas[1]
+    datas = data.split(splter, maxsplit=4)
+    hId = datas[0]
+    tmout = datas[1]
+    url = datas[2]
+    obj = datas[3]
 
-    print("현재 분석 중..." + url + "&&" + obj)
+    # 타임아웃 등록
+    print("tmrg: " + hId + splter + tmout)
+    print("현재 분석 중..." + url + " && " + obj)
     
     if url == "exit":
         break
