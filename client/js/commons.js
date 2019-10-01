@@ -4,26 +4,6 @@ const serverUrl = "http://dev.chsain.com:3000/";
 // 파이썬 분류 결과를 주고 받기 위한 소켓 선언
 let socket = io.connect(serverUrl);
 
-// 분산 처리 시스템을 위한 소켓 생성
-// let sockets = [
-//     {
-//         reqUrl: "http://dev.chsain.com:3000",
-//         socket: new io.connect("http://dev.chsain.com:3000")
-//     },
-//     {
-//         reqUrl: "http://dev.chsain.com:3001",
-//         socket: new io.connect("http://dev.chsain.com:3001")
-//     },
-//     {
-//         reqUrl: "http://dev.chsain.com:3002",
-//         socket: new io.connect("http://dev.chsain.com:3002")
-//     },
-//     {
-//         reqUrl: "http://dev.chsain.com:3003",
-//         socket: new io.connect("http://dev.chsain.com:3003")
-//     }
-// ]
-
 // 초기 대주제 데이터 구성
 // 뉴스, 스포츠, 게임, 음악, 연예, 생활/노하우, 건강, 자동차, IT/기술, 기타
 const initCard = [
@@ -120,7 +100,7 @@ const categorize = {
             let thread = 0;
             const testinterval = setInterval(() => {
                 if(i >= data.length - 1) clearInterval(testinterval);
-                console.log(`${data[i].url} ==> `);
+                console.log(data[i], "==>");
                 // 카테고리 분석 함수 호출
                 if(thread > 1) thread = 0;
                 new CoreCategorize(data[i], thread);
@@ -128,16 +108,12 @@ const categorize = {
                 i++
                 thread++;
             }, 10);
-
-            // data.forEach(page => {
-            //     console.log(`${page.url} ==> `);
-            //     // 카테고리 분석 함수 호출
-            //     new CoreCategorize(page);
-            // });
         });
         const checkSockError = setInterval(() => {
             if(!socket.connected) {
                 alert("서버 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.");
+                // 성공한 작업만 로컬 저장소에 분류 결과 데이터 저장
+                localStorage.setItem("resultData", JSON.stringify(window.resultData));
                 $('.ui.active.dimmer').detach();
                 clearInterval(checkSockError);
             }
@@ -177,7 +153,7 @@ const categorize = {
 
 // 분류한 데이터 소켓으로 수신
 socket.on('categorized', ({ main, sub, obj }) => {
-    console.log(main, sub, JSON.parse(obj));
+    console.log("<==", main, sub, JSON.parse(obj));
 
     // 요청에 대한 응답이 실패한 경우(타임 아웃 등)
     if(main === "failed" && sub === "failed") {
@@ -206,6 +182,19 @@ socket.on('categorized', ({ main, sub, obj }) => {
         else {
             console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
         }
+        // 정렬
+        for(let i = 0; i < initCard.length; i++) {
+            let main = window.resultData[i].data;
+            Object.keys(main).forEach(e => {
+                main[e].sort((a, b) => { 
+                    return a.lastVisitTime > b.lastVisitTime 
+                    ? -1 
+                    : a.lastVisitTime < b.lastVisitTime 
+                    ? 1 
+                    : 0;  
+                });
+            });
+        }
         // 로컬 저장소에 분류 결과 데이터 저장
         localStorage.setItem("resultData", JSON.stringify(window.resultData));
         $('.ui.active.dimmer').detach();
@@ -224,46 +213,6 @@ function CoreCategorize(obj, to) { // to 변수는 현재는 사용하지 않음
         thread: to,
         tmout: 12     
     });
-
-    // // post로 카테고리 분석 서버로 url 전송
-    // $.post(`${serverUrl}do_categorize${this.to}`,
-    //     {
-    //         obj: JSON.stringify(this.obj)
-    //     },
-    //     ({ main, sub, obj }) => {
-    //         // 결과를 받아옴... main 은 해당 페이지의 대주제(정수), sub 는 소주제(문자열), obj 는 방문기록 페이지 데이터(url, 마지막 방문 날짜 등등 포함)
-    //         let r = window.resultData[main].data[sub];
-    //         if (!r) window.resultData[main].data[sub] = new Array();
-    //         window.resultData[main].data[sub].push(obj);
-    //         window.resultData[main].length++;
-    //         $(`.extra.content[data-cat="${main}"]>p>span`).html(window.resultData[main].length);
-    //         categorize.resTimes++;
-    //         categorize.succeedReqs++;
-
-    //         // 페이지 요청 수랑 응답 수가 일치할 때(모든 요청에 대한 응답이 완료되었을 때)
-    //         if (categorize.resTimes === categorize.reqTimes) {
-    //             // 모두 성공하였으면
-    //             if (categorize.reqTimes === categorize.succeedReqs) {
-    //                 console.log('뷰 갱신 및 데이터 저장');
-    //             }
-    //             // 일부 실패하였으면
-    //             else {
-    //                 console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-    //             }
-    //             // 로컬 저장소에 분류 결과 데이터 저장
-    //             localStorage.setItem("resultData", JSON.stringify(window.resultData));
-    //             $('.ui.active.dimmer').detach();
-    //         }
-    //     })
-    //     .fail(() => {
-    //         categorize.resTimes++;
-    //         categorize.failedReqs++;
-    //         if (categorize.resTimes === categorize.reqTimes) {
-    //             console.log('일부 작업이 실패했습니다. 성공한 작업만 반영됩니다.');
-    //             localStorage.setItem("resultData", JSON.stringify(window.resultData));
-    //             $('.ui.active.dimmer').detach();
-    //         }
-    //     });
 }
 
 // 조회 및 분류 함수
@@ -398,9 +347,6 @@ const cardClick = e => {
     let rLevel = "main";
     let data = null;
     let titleText = "";
-    console.log(selected);
-    console.log(level);
-    console.log(target);
 
     if (level === "main") {
         rLevel = "sub";
@@ -437,7 +383,6 @@ const cardClick = e => {
             console.log(url);
             chrome.tabs.create({ url: url, selected: false });
         }
-
         return;
     }
     else {
@@ -446,7 +391,6 @@ const cardClick = e => {
 
     prevBtn.attr('prev-level', level);
 
-    console.log(data);
     title.html(titleText);
     container.animate({ opacity: 0 }, 250, () => {
         cardRender(data, rLevel);
@@ -595,7 +539,6 @@ const goPrev = e => {
         titleText = window.resultData[window.catMain].title;
         prevBtn.css({ "display": "inline-flex" });
         prevBtn.attr('prev-level', 'main');
-        console.log(data);
     }
     else if (prevLevel === "main") {
         data = window.resultData;
@@ -607,7 +550,6 @@ const goPrev = e => {
             this.scrollLeft -= (delta * 25);
             event.preventDefault();
         });
-        console.log(data);
     }
 
     title.html(titleText);
@@ -621,23 +563,6 @@ const goPrev = e => {
         }
         container.animate({ opacity: 1 }, 250);
     });
-}
-
-// html 스트링으로부터 text만 추출
-// https://stackoverflow.com/questions/28899298/extract-the-text-out-of-html-string-using-javascript
-const extTextFromHtmls = (s, space) => {
-    let span = document.createElement('span');
-    span.innerHTML = s;
-    if (space) {
-        let children = span.querySelectorAll('*');
-        for (let i = 0; i < children.length; i++) {
-            if (children[i].textContent)
-                children[i].textContent += ' ';
-            else
-                children[i].innerText += ' ';
-        }
-    }
-    return [span.textContent || span.innerText].toString().replace(/ +/g, ' ');
 }
 
 // 방문기록 조회 시 날짜 및 시간을 밀리세컨드 단위로 환산
@@ -696,12 +621,4 @@ function copyToClipboard(val) {
     t.select();
     document.execCommand('copy');
     document.body.removeChild(t);
-}
-
-// uuid 생성 함수
-// https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-function uuidv4() {
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
 }

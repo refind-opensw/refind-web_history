@@ -16,15 +16,6 @@ $(document).ready(e => {
     // 크롬 스토리지에 검색 날짜 저장 및 불러오기
     chrome.storage.sync.get(data => {
         const { searchDate } = data;
-        
-        // if (!refindGUID) {
-        //     const id = uuidv4();
-        //     chrome.storage.sync.set({refindGUID: id});
-        //     socket.emit('joinUser', id);
-        // }
-        // else {
-        //     socket.emit('joinUser', refindGUID);
-        // }
 
         if (!searchDate) {
             let s = new Date();
@@ -135,6 +126,6 @@ $(document).ready(e => {
         }
     });
 
-    // 검색 및 분류 버튼 클릭 이벤트 지정
+    // 검색 및 분류 버튼 클릭 이벤트 지정
     $(document).on('click', "#action_search", actionSearch);
 });

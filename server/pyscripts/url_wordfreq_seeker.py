@@ -105,8 +105,8 @@ w2vmodelko = gensim.models.Word2Vec.load('ko.bin')
 w2vmodelen = KeyedVectors.load_word2vec_format('en.bin', binary=True)
 #형태소 분류
 mecab = Mecab("/usr/local/lib/mecab/dic/mecab-ko-dic/")
-# TfidVectorizer기본값으로 설정
-cv = TfidfVectorizer()
+# TfidVectorizer min_df 설정 및 초기화
+cv = TfidfVectorizer(min_df=0.025)
 print("로오딩완료!")
 while 1:
 
@@ -135,7 +135,7 @@ while 1:
         top_topic = "기타"
         semi_topic = "미분류"
         continue
-    if len(main_text) == 1:
+    if len(main_text) < 5:
         print ("보안이 철저한 문서군요.")
         print (main_text)
         top_topic = "기타"
@@ -185,8 +185,23 @@ while 1:
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     if whatlang == "k":
-        our_topics = ["뉴스","헬스","생활","리빙","노하우","컴퓨터","스마트폰","자동차","역사","여행"
-                      "핸드폰","건강","정보","스포츠","음악","연예","게임","방송","음식","동물","지역"]
+        our_topics = ["뉴스","소식","발표","시사","국제","국내"
+        ,"건강","웰빙","피트니스","라이프"
+        ,"노하우","리빙"
+        ,"오락","놀이","엔터테인먼트","게임"
+        ,"교육","학습"
+        ,"방송","연예"
+        ,"금융","경제"
+        ,"스포츠","경기","운동","시합"
+        ,"음식","푸드","식사","요리"
+        ,"지리","지역","현장","영역","영토"
+        ,"패션","옷","스타일"
+        ,"집","주거","부동산"
+        ,"자동차","오토바이","탈것"
+        ,"동물","짐승","생물"
+        ,"음악","노래","작곡"
+        ,"영화"
+        ,"테크","기술"]
         usingmodel = w2vmodelko
     else:
         our_topics = ["sports","game","music","broadcasting","health","vehicle","technic","history","trip","travel"

@@ -7,15 +7,15 @@ var io = socket_io()
 router.io = io
 
 let defaultCats = {
-  1: ["뉴스", "News"],
-  2: ["스포츠", "Sport", "Sports"],
-  3: ["게임", "Game", "Games"],
-  4: ["음악", "Music", "Musics"],
-  5: ["연예", "Actor", "Actors", "Movie", "Movies", "TV"],
+  1: ["뉴스", "소식", "발표", "시사", "국제", "국내", "News"],
+  2: ["스포츠", "경기", "운동", "시합", "Sport", "Sports"],
+  3: ["오락", "놀이", "엔터테인먼트", "게임", "Game", "Games"],
+  4: ["음악", "노래", "작곡", "Music", "Musics"],
+  5: ["방송", "연예", "Actor", "Actors", "Movie", "Movies", "TV"],
   6: ["생활", "노하우", "리빙", "Living", "Know-how"],
-  7: ["건강", "헬스", "Health", "Well-bing"],
-  8: ["자동차", "Car", "Cars", "Auto", "Autos", "Automobils", "Vehicles", "Motorbikes"],
-  9: ["기술", "IT", "컴퓨터", "스마트폰", "핸드폰", "Tech", "technic", "IT", "Computers", "Smartphone", "Cellphone"]
+  7: ["건강", "웰빙", "피트니스", "라이프", "헬스", "Health", "Well-bing"],
+  8: ["자동차", "오토바이", "탈것", "Car", "Cars", "Auto", "Autos", "Automobils", "Vehicles", "Motorbikes"],
+  9: ["테크", "기술", "IT", "컴퓨터", "스마트폰", "핸드폰", "Tech", "technic", "IT", "Computers", "Smartphone", "Cellphone"]
 }
 
 const getMainCatNum = (dStr, cats) => {
@@ -75,7 +75,7 @@ for (let i = 0; i < pyshell.length; i++) {
         obj: results[2]
       });
     }
-    else if(f_tag === "tmrg: ") {
+    else if (f_tag === "tmrg: ") {
       console.log(results);
       const hId = results[0] + "";
       const tmout = parseInt(results[1]);
