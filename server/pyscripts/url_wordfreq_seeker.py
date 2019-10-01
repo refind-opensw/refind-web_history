@@ -44,7 +44,7 @@ def readURLandParse(URL):
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
 
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분
-# https://frhyme.github.io/python-basic/korean_or_english/ 
+# https://frhyme.github.io/python-basic/korean_or_english/
 def isEnglishOrKorean(input_s):
     k_count = 0
     e_count = 0
@@ -65,7 +65,7 @@ def mecabFreqToDataFrame(text):
     sentence_token=kss.split_sentences(text)
     for i in range(0,len(sentence_token)):
         #명사 분류
-        allnoun.append(" ".join(mecab.nouns(sentence_token[i]))) 
+        allnoun.append(" ".join(mecab.nouns(sentence_token[i])))
     return allnoun
 
 # 한글 이외 언어 형태소분석
@@ -79,14 +79,14 @@ def elseFreqToDataFrame(text, stop):
     #문장 분류
     sentence_token = sent_tokenize(text)
     # 토큰화한 문장을 각각 토큰화한후 명사만 뽑아 join한 결과를 각각 리스트에 저장
-    
+
     for i in range(0,len(sentence_token)):
         tokens.append([tok for tok in sentence_token[i].split()])
         clean_tokens.append([tok for tok in tokens[i] if len(tok.lower())>1 and (tok.lower() not in stop)])
         tagged.append(nltk.pos_tag(clean_tokens[i]))
         #명사 분류
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
-    
+
     return allnoun
 
 
@@ -167,7 +167,7 @@ while 1:
         title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
         title_tagged = nltk.pos_tag(title_clean_tokens)
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
-    
+
     #X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     X = cv.fit_transform(sentences).toarray()*100
 
@@ -211,7 +211,7 @@ while 1:
     semi_topic = ""
     top_topic = ""
     semi_topic_similarity = 0
-    
+
     # 합연산 결과 가장 유사도가 높은 주제 저장
     for l in range(len(our_topics)):
         if sum_similarity[0,l] > max_similarity:
