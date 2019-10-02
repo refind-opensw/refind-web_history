@@ -42,7 +42,7 @@ def readURLandParse(URL):
     html=response.read()
     #Beautifulsoup 함수로 뷰티플스프 처리된 html을 return
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
-
+  
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분
 # https://frhyme.github.io/python-basic/korean_or_english/ 
 def isEnglishOrKorean(input_s):
@@ -65,7 +65,7 @@ def mecabFreqToDataFrame(text):
     sentence_token=kss.split_sentences(text)
     for i in range(0,len(sentence_token)):
         #명사 분류
-        allnoun.append(" ".join(mecab.nouns(sentence_token[i]))) 
+        allnoun.append(" ".join(mecab.nouns(sentence_token[i])))
     return allnoun
 
 # 한글 이외 언어 형태소분석
@@ -79,16 +79,13 @@ def elseFreqToDataFrame(text, stop):
     #문장 분류
     sentence_token = sent_tokenize(text)
     # 토큰화한 문장을 각각 토큰화한후 명사만 뽑아 join한 결과를 각각 리스트에 저장
-    
     for i in range(0,len(sentence_token)):
         tokens.append([tok for tok in sentence_token[i].split()])
         clean_tokens.append([tok for tok in tokens[i] if len(tok.lower())>1 and (tok.lower() not in stop)])
         tagged.append(nltk.pos_tag(clean_tokens[i]))
         #명사 분류
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
-    
     return allnoun
-
 
 # LDA 튜토리얼 https://pypi.org/project/lda/
 def makeTopicword_with_LDA(X):
@@ -271,7 +268,7 @@ while 1:
     # 분류가 충분하지 않다고 생각되므로 기타-미분류로 분류
     if len(cv.vocabulary_) / max_sum_similarity > 6:
         top_topic = "기타"
-        semi_topic = "미분류"
+        semi_topic = ""
     else:
         for i in range(len(title)):
             try:                
@@ -286,7 +283,7 @@ while 1:
         semi_topic="미분류"
     # 문서의 퍼져있는 단어의 종류 수
     print(len(cv.vocabulary_))
-    # 유사한 주제군으로 분류한 리스트 합의 평균값의 최대값
+    # 유사한 주제군으로 분류한
     print(max_sum_similarity)
     # 대주제
     print(top_topic)

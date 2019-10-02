@@ -7,7 +7,6 @@
         "default_icon": "img/ic_default.png",
         "default_popup": "main.html"
     },
-    "web_accessible_resources": ["main.html"],
     "permissions": [
         "tabs",
         "notifications",
