@@ -47,12 +47,9 @@ def readURLandParse(URL):
 # https://frhyme.github.io/python-basic/korean_or_english/
 def isEnglishOrKorean(input_s):
     k_count = 0
-    e_count = 0
     for c in input_s:
         if ord('가') <= ord(c) <= ord('힣'):
             k_count+=1
-        elif ord('a') <= ord(c.lower()) <= ord('z'):
-            e_count+=1
     return "k" if k_count>30 else "e"
 
 # mecab, kkma 이용 형태소 분석
@@ -255,7 +252,7 @@ while 1:
                         pass
 
     # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 저장변수 초기화
-    avg_sum_similarity = [0] *len(our_topics)
+    avg_sum_similarity = [0] * len(our_topics)
     max_sum_similarity = 0.0
 
     # 대주제 들어갈 변수 초기화
@@ -263,7 +260,7 @@ while 1:
 
     # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 구하기
     for i in range(len(our_topics)):
-        avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])]
+        avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])
         if avg_sum_similarity[i] > max_sum_similarity:
             max_sum_similarity = avg_sum_similarity[i]
             # 유사한 주제군중 미리 선정한 리스트 0번째 자리의 주제로 대주제 선정

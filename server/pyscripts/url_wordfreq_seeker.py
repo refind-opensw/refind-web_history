@@ -47,12 +47,9 @@ def readURLandParse(URL):
 # https://frhyme.github.io/python-basic/korean_or_english/ 
 def isEnglishOrKorean(input_s):
     k_count = 0
-    e_count = 0
     for c in input_s:
         if ord('가') <= ord(c) <= ord('힣'):
             k_count+=1
-        elif ord('a') <= ord(c.lower()) <= ord('z'):
-            e_count+=1
     return "k" if k_count>30 else "e"
 
 # mecab, kkma 이용 형태소 분석
