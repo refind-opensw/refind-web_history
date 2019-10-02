@@ -44,7 +44,7 @@ def readURLandParse(URL):
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
 
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분
-# https://frhyme.github.io/python-basic/korean_or_english/ 
+# https://frhyme.github.io/python-basic/korean_or_english/
 def isEnglishOrKorean(input_s):
     k_count = 0
     e_count = 0
@@ -65,7 +65,7 @@ def mecabFreqToDataFrame(text):
     sentence_token=kss.split_sentences(text)
     for i in range(0,len(sentence_token)):
         #명사 분류
-        allnoun.append(" ".join(mecab.nouns(sentence_token[i]))) 
+        allnoun.append(" ".join(mecab.nouns(sentence_token[i])))
     return allnoun
 
 # 한글 이외 언어 형태소분석
@@ -79,14 +79,13 @@ def elseFreqToDataFrame(text, stop):
     #문장 분류
     sentence_token = sent_tokenize(text)
     # 토큰화한 문장을 각각 토큰화한후 명사만 뽑아 join한 결과를 각각 리스트에 저장
-    
+
     for i in range(0,len(sentence_token)):
         tokens.append([tok for tok in sentence_token[i].split()])
         clean_tokens.append([tok for tok in tokens[i] if len(tok.lower())>1 and (tok.lower() not in stop)])
         tagged.append(nltk.pos_tag(clean_tokens[i]))
         #명사 분류
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
-    
     return allnoun
 
 
@@ -99,6 +98,7 @@ def makeTopicword_with_LDA(X):
     return model.topic_word_
 
 #Start
+splter = "<!toArr@comd%^&splt^&%>"
 
 # 모델 프리 로딩
 print("로오딩중!")
@@ -111,8 +111,18 @@ cv = TfidfVectorizer(min_df=0.025)
 print("로오딩완료!")
 while 1:
 
-    # url 정보 저장
-    url = input()
+    # url, obj 정보 저장
+    data = input()
+    datas = data.split(splter, maxsplit=4)
+    hId = datas[0]
+    tmout = datas[1]
+    url = datas[2]
+    obj = datas[3]
+
+    # 타임아웃 등록
+    print("tmrg: " + hId + splter + tmout)
+    print("현재 분석 중..." + url + " && " + obj)
+    
     if url == "exit":
         break
     # 시작 시간 저장
@@ -138,6 +148,7 @@ while 1:
         continue
     if len(main_text) < 5:
         print ("보안이 철저한 문서군요.")
+        print (main_text)
         top_topic = "기타"
         semi_topic = "미분류"
         continue
@@ -166,7 +177,7 @@ while 1:
         title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
         title_tagged = nltk.pos_tag(title_clean_tokens)
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
-    
+
     #X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     X = cv.fit_transform(sentences).toarray()*100
 
@@ -182,7 +193,7 @@ while 1:
     # 토픽 체크용 디버그 출력
     for i, topic_dist in enumerate(topic_word):
         topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
-        print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+        # print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     # 관리자가 직접 선정한 한/영 선정주제군 2차원 리스트 초기화
     if whatlang == "k":
@@ -252,9 +263,7 @@ while 1:
 
     # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 구하기
     for i in range(len(our_topics)):
-        avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])
-        # 디버그용 텍스트
-        print(avg_sum_similarity[i],our_topics[i][0])
+        avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])]
         if avg_sum_similarity[i] > max_sum_similarity:
             max_sum_similarity = avg_sum_similarity[i]
             # 유사한 주제군중 미리 선정한 리스트 0번째 자리의 주제로 대주제 선정
@@ -284,14 +293,11 @@ while 1:
                 pass
     if semi_topic == "":
         semi_topic="미분류"
-    # 문서의 퍼져있는 단어의 종류 수
-    print(len(cv.vocabulary_))
-    # 유사한 주제군으로 분류한 리스트 합의 평균값의 최대값
-    print(max_sum_similarity)
-    # 대주제
-    print(top_topic)
-    # 소주제
-    print(semi_topic)
+    # print(len(cv.vocabulary_))
+    # print(max_sum_similarity)
+    # print(top_topic)
+    # print(semi_topic)
+    print("data: " + top_topic + splter + semi_topic + splter + obj)
     # 현재시각 - 시작시간 = 실행 시간
     end = time.time()
     print("time :", end - start)
