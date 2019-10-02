@@ -176,7 +176,14 @@ while 1:
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
 
     #X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
-    X = cv.fit_transform(sentences).toarray()*100
+    try :
+        X = cv.fit_transform(sentences).toarray()*100
+    except :
+        print ("보안이 철저한 문서군요.")
+        top_topic = "기타"
+        semi_topic = "미분류"
+        print("data: " + top_topic + splter + semi_topic + splter + obj)
+        continue
 
     #TF-IDF에서 특장점이 가중치 높은 단어를 저장
     vocab = cv.get_feature_names()
