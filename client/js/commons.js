@@ -28,9 +28,9 @@ const initCard = [
         imgsrc: "img/ic_cat_music.png"
     },
     {
-        title: "연예",
+        title: "교육",
         catno: 5,
-        imgsrc: "img/ic_cat_tv.png"
+        imgsrc: "img/ic_cat_education.png"
     },
     {
         title: "생활/노하우",
@@ -48,9 +48,34 @@ const initCard = [
         imgsrc: "img/ic_cat_car.png"
     },
     {
-        title: "IT/기술",
+        title: "금융",
         catno: 9,
-        imgsrc: "img/ic_cat_tech.png"
+        imgsrc: "img/ic_cat_finance.png"
+    },
+    {
+        title: "음식",
+        catno: 10,
+        imgsrc: "img/ic_cat_food.png"
+    },
+    {
+        title: "지리",
+        catno: 11,
+        imgsrc: "img/ic_cat_geography.png"
+    },
+    {
+        title: "패션",
+        catno: 12,
+        imgsrc: "img/ic_cat_fashion.png"
+    },
+    {
+        title: "집",
+        catno: 13,
+        imgsrc: "img/ic_cat_house.png"
+    },
+    {
+        title: "동물",
+        catno: 14,
+        imgsrc: "img/ic_cat_animal.png"
     },
     {
         title: "기타",
@@ -447,7 +472,7 @@ const cardRender = (data, level) => {
                     </div>
                     ${data[i].catno === 0 || level != "main" ? '' : `
                         <div class="content">
-                            <img src="${data[i].imgsrc}" alt="${data[i].title} 의 이미지" width="96px">
+                            <img src="${data[i].imgsrc}" alt="${data[i].title} 의 이미지" width="72px">
                         </div>
                     `}
                     <div class="extra content" data-cat="${data[i].catno}">
@@ -473,7 +498,7 @@ const cardRender = (data, level) => {
                     </div>
                     ${val == 0 || level != "main" ? '' : `
                         <div class="content">
-                            <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                            <img src="${imgsrc}" alt="${title} 의 이미지" width="72px">
                         </div>
                     `}
                     <div class="extra content" data-cat="${val}">
@@ -489,7 +514,7 @@ const cardRender = (data, level) => {
                         </div>
                         ${val == 0 || level != "main" ? '' : `
                             <div class="content">
-                                <img src="${imgsrc}" alt="${title} 의 이미지" width="96px">
+                                <img src="${imgsrc}" alt="${title} 의 이미지" width="72px">
                             </div>
                         `}
                         <div class="extra content" data-cat="${val}">
@@ -513,7 +538,7 @@ const cardRender = (data, level) => {
                     </div>
                     ${val == 0 || level != "main" ? '' : `
                         <div class="content">
-                            <img src="${imgsrc}" alt="${data.val} 의 이미지" width="96px">
+                            <img src="${imgsrc}" alt="${data.val} 의 이미지" width="72px">
                         </div>
                     `}
                     <div class="extra content" data-cat="${val}">
