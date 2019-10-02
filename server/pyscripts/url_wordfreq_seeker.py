@@ -42,9 +42,9 @@ def readURLandParse(URL):
     html=response.read()
     #Beautifulsoup 함수로 뷰티플스프 처리된 html을 return
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
-
+  
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분
-# https://frhyme.github.io/python-basic/korean_or_english/
+# https://frhyme.github.io/python-basic/korean_or_english/ 
 def isEnglishOrKorean(input_s):
     k_count = 0
     e_count = 0
@@ -79,7 +79,6 @@ def elseFreqToDataFrame(text, stop):
     #문장 분류
     sentence_token = sent_tokenize(text)
     # 토큰화한 문장을 각각 토큰화한후 명사만 뽑아 join한 결과를 각각 리스트에 저장
-
     for i in range(0,len(sentence_token)):
         tokens.append([tok for tok in sentence_token[i].split()])
         clean_tokens.append([tok for tok in tokens[i] if len(tok.lower())>1 and (tok.lower() not in stop)])
@@ -87,7 +86,6 @@ def elseFreqToDataFrame(text, stop):
         #명사 분류
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
     return allnoun
-
 
 # LDA 튜토리얼 https://pypi.org/project/lda/
 def makeTopicword_with_LDA(X):
@@ -137,7 +135,6 @@ while 1:
         continue
     if len(main_text) < 5:
         print ("보안이 철저한 문서군요.")
-        print (main_text)
         top_topic = "기타"
         semi_topic = "미분류"
         continue
@@ -166,7 +163,7 @@ while 1:
         title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
         title_tagged = nltk.pos_tag(title_clean_tokens)
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
-
+    
     #X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     X = cv.fit_transform(sentences).toarray()*100
 
@@ -184,71 +181,113 @@ while 1:
         topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
         print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
+    # 관리자가 직접 선정한 한/영 선정주제군 2차원 리스트 초기화
     if whatlang == "k":
-        our_topics = ["뉴스","소식","발표","시사","국제","국내"
-        ,"건강","웰빙","피트니스","라이프"
-        ,"노하우","리빙"
-        ,"오락","놀이","엔터테인먼트","게임"
-        ,"교육","학습"
-        ,"방송","연예"
-        ,"금융","경제"
-        ,"스포츠","경기","운동","시합"
-        ,"음식","푸드","식사","요리"
-        ,"지리","지역","현장","영역","영토"
-        ,"패션","옷","스타일"
-        ,"집","주거","부동산"
-        ,"자동차","오토바이","탈것"
-        ,"동물","짐승","생물"
-        ,"음악","노래","작곡"
-        ,"영화"
-        ,"테크","기술"]
+        our_topics = [["뉴스","소식","발표","시사","보도","방송"]
+        ,["건강","라이프"]
+        ,["노하우","리빙"]
+        ,["게임","오락","놀이","엔터테인먼트"]
+        ,["교육","학습"]
+        ,["금융","경제"]
+        ,["스포츠","경기"]
+        ,["음식","푸드","식사","요리"]
+        ,["지리","지역","현장","영역","영토"]
+        ,["패션","옷","스타일"]
+        ,["집","주거","부동산"]
+        ,["자동차","오토바이","탈것","이동수단"]
+        ,["동물","짐승","생물"]
+        ,["음악","노래","뮤직"]]
         usingmodel = w2vmodelko
     else:
-        our_topics = ["sports","game","music","broadcasting","health","vehicle","technic","history","trip","travel"
-                      ,"car","animal","food","computer","automobile","news","life","geological","area"]
+        our_topics = [["News","Announcement","Report","Broadcasting"]
+        ,["Health","Life"]
+        ,["knowhow","living"]
+        ,["Game","Play","Entertainment"]
+        ,["Education","Learning"]
+        ,["Finance","Economy"]
+        ,["sports","athletic"]
+        ,["food","food","dinner","cooking"]
+        ,["geography","region","field","area","territory"]
+        ,["Fashion","Cloth","Style"]
+        ,["House","Housing","Freety"]
+        ,["car","autobi","move","automobile"]
+        ,["Animal","beast","creature"]
+        ,["music","sing","playing","instrument"]]
         usingmodel = w2vmodelen
 
-    # 변수 초기화
-    max_similarity = 0.0
-    sum_similarity = np.zeros((1, len(our_topics)), dtype="f")
+    # 선정주제와 선별주제의 유사도의 합을 저장할 리스트 선언
+    sum_similarity= []
+    # 모든 주제의 합을 유사한 종류로 분류할 리스트 초기화
+    sum_sum_similarity= [0]*len(our_topics)
 
-    #토픽과 대주제 대조 후 유사도 합연산
+    # 선정주제와 선별주제의 유사도의 합을 저장할 리스트 초기화
+    for i in range(len(our_topics)):
+        mylist = [0]*len(our_topics[i])
+        sum_similarity.append(mylist)
+
+    # 선정주제와 선별주제 대조 후 유사도 합연산
     for topic_dist in topic_word:
         topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
         for i in range(len(our_topics)):
-            for j in topic_words:
-                try:
-                    sum_similarity[0,i] += usingmodel.wv.similarity(j, our_topics[i])
-                except KeyError:
-                    sum_similarity[0,i] += 0.1
-                    pass
-    semi_topic = ""
+            for j in range(len(our_topics[i])):
+                for k in topic_words:
+                    try:
+                        sum_similarity[i][j] += usingmodel.wv.similarity(k, our_topics[i][j])
+                        sum_sum_similarity[i] += sum_similarity[i][j]
+                    except KeyError:
+                        # 선별주제가
+                        sum_similarity[i][j] += 0.1
+                        sum_sum_similarity[i] += 0.1
+                        pass
+
+    # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 저장변수 초기화
+    avg_sum_similarity = [0] *len(our_topics)
+    max_sum_similarity = 0.0
+
+    # 대주제 들어갈 변수 초기화
     top_topic = ""
+
+    # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 구하기
+    for i in range(len(our_topics)):
+        avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])
+        # 디버그용 텍스트
+        print(avg_sum_similarity[i],our_topics[i][0])
+        if avg_sum_similarity[i] > max_sum_similarity:
+            max_sum_similarity = avg_sum_similarity[i]
+            # 유사한 주제군중 미리 선정한 리스트 0번째 자리의 주제로 대주제 선정
+            top_topic = our_topics[i][0]
+
+    max_sum_similarity /= 10
+    # 소주제 들어갈 변수 초기화
+    semi_topic = ""
+
+    # 소주제 유사도 변수 초기화
     semi_topic_similarity = 0
 
-    # 합연산 결과 가장 유사도가 높은 주제 저장
-    for l in range(len(our_topics)):
-        if sum_similarity[0,l] > max_similarity:
-            max_similarity = sum_similarity[0,l]
-            top_topic = our_topics[l]
-    if len(cv.vocabulary_) / max_similarity > 150:
+    # 문장 전체 단어종류 / 유사도가 가장 높은 주제군의 값이 일정 값을 넘어가지않으면
+    # 분류가 충분하지 않다고 생각되므로 기타-미분류로 분류
+    if len(cv.vocabulary_) / max_sum_similarity > 6:
         top_topic = "기타"
-        semi_topic = "미분류"
+        semi_topic = ""
     else:
-        for i in range(len(our_topics)):
-            for j in range(len(title)):
-                try:
-                    if semi_topic_similarity < usingmodel.wv.similarity(title[j], our_topics[i]):
-                        semi_topic_similarity = usingmodel.wv.similarity(title[j], our_topics[i])
-                        semi_topic = title[j]
-                except KeyError:
-                    semi_topic_similarity = 0.1
-                    pass
+        for i in range(len(title)):
+            try:                
+                if semi_topic_similarity < usingmodel.wv.similarity(title[i], top_topic):
+                    semi_topic_similarity = usingmodel.wv.similarity(title[i], top_topic)
+                    semi_topic = title[i]
+            except KeyError as e:
+                if i!=0:
+                    semi_topic = title[i-1]
+                pass
     if semi_topic == "":
         semi_topic="미분류"
+    # 문서의 퍼져있는 단어의 종류 수
     print(len(cv.vocabulary_))
-    print(max_similarity)
+    # 유사한 주제군으로 분류한
+    print(max_sum_similarity)
+    # 대주제
     print(top_topic)
+    # 소주제
     print(semi_topic)
     # 현재시각 - 시작시간 = 실행 시간
     end = time.time()
