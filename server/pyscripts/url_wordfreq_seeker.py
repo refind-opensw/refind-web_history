@@ -46,9 +46,9 @@ def readURLandParse(URL):
     html=response.read()
     #Beautifulsoup 함수로 뷰티플스프 처리된 html을 return
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
-  
+
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분하는 함수
-# https://frhyme.github.io/python-basic/korean_or_english/ 
+# https://frhyme.github.io/python-basic/korean_or_english/
 def isEnglishOrKorean(input_s):
     k_count = 0
     for c in input_s:
@@ -169,7 +169,7 @@ while 1:
         title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
         title_tagged = nltk.pos_tag(title_clean_tokens)
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
-    
+
     # X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     try :
         tfidf_bow = tfidf.fit_transform(sentences).toarray()*100
@@ -283,7 +283,7 @@ while 1:
     # 그렇지 않으면 정상적으로 분류
     else:
         for i in range(len(title)):
-            try:                
+            try:
                 if semi_topic_similarity < usingmodel.wv.similarity(title[i], top_topic):
                     semi_topic_similarity = usingmodel.wv.similarity(title[i], top_topic)
                     semi_topic = title[i]

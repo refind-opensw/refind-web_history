@@ -307,3 +307,4 @@ while 1:
     # 현재시각 - 시작시간 = 실행 시간
     end = time.time()
     print("time :", end - start)
+
