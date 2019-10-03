@@ -259,7 +259,7 @@ while 1:
                         pass
 
     # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 저장변수 초기화
-    avg_sum_similarity = [0] *len(our_topics)
+    avg_sum_similarity = [0] * len(our_topics)
     max_sum_similarity = 0.0
 
     # 대주제 들어갈 변수 초기화

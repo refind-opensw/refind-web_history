@@ -177,6 +177,8 @@ while 1:
         print ("보안이 철저한 문서군요.")
         top_topic = "기타"
         semi_topic = "미분류"
+        print(top_topic)
+        print(semi_topic)
         continue
 
     #TF-IDF에서 특장점이 가중치 높은 단어를 저장

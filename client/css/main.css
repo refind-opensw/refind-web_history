@@ -50,7 +50,7 @@ footer > .divider {
 
 .ui.cards {
     width: 220%;
-    height: 270px;
+    height: 400px;
     padding: 16px;
     user-select: none;
 }
@@ -83,7 +83,12 @@ footer > .divider {
     padding-bottom: 10px;
 }
 
+.ui.card > .content > .header {
+    margin: 2px 0 0 2px !important;
+}
+
 .ui.card > .content {
+    padding: 8px !important;
     pointer-events: none;
 }
 
@@ -116,7 +121,7 @@ footer > .divider {
 }
 
 .list-container {
-    height: 270px;
+    height: 376px;
     padding: 16px;
 }
 
@@ -169,7 +174,8 @@ footer > .divider {
     cursor: pointer;
     color: #ffffff;
     text-shadow: 0 0 2px #000000;
-    transition: all .2s
+    top: 280px;
+    transition: all .2s;
 }
 
 .action-drags:hover {
@@ -178,11 +184,9 @@ footer > .divider {
 }
 
 #drag_left {
-    top: 210px;
     left: -48px;
 }
 
 #drag_right {
-    top: 210px;
     right: -48px;
 }
