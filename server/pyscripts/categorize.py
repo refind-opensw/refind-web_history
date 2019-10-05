@@ -104,12 +104,12 @@ splter = "<!toArr@comd%^&splt^&%>"
 
 # 모델 프리 로딩
 print("로오딩중!")
-w2vmodelko = gensim.models.Word2Vec.load('ko.bin')
+w2vmodelko = KeyedVectors.load_word2vec_format('ko.bin', binary=True)
 w2vmodelen = KeyedVectors.load_word2vec_format('en.bin', binary=True)
 # 한글 형태소 분류함수 초기화
 mecab = Mecab("/usr/local/lib/mecab/dic/mecab-ko-dic/")
 # TfidVectorizer에 최소 가중치 빈도수인 min_df 설정 및 초기화
-tfidf = TfidfVectorizer(min_df=0.025)
+tfidf = TfidfVectorizer()
 # lda시 행렬의 크기 전역 변수 조정
 n_top_words = 10
 print("로오딩완료!")
@@ -183,7 +183,7 @@ while 1:
         title_tagged = nltk.pos_tag(title_clean_tokens)
         title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
 
-    # X의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
+    # TF-IDF의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     try :
         tfidf_bow = tfidf.fit_transform(sentences).toarray()*100
     except :
@@ -199,38 +199,38 @@ while 1:
     # LDA 튜토리얼 https://pypi.org/project/lda/
     topic_word = makeTopicword_with_LDA(tfidf_bow)
 
+    # 토픽 체크용 디버그 출력
+    for i, topic_dist in enumerate(topic_word):
+        topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
+        # print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+
     # 관리자가 직접 선정한 한/영 선정주제군 2차원 리스트 초기화
     if whatlang == "k":
-        our_topics = [["뉴스","소식","발표","시사","보도","방송"]
-        ,["건강","라이프"]
-        ,["노하우","리빙"]
-        ,["게임","오락","놀이","엔터테인먼트"]
-        ,["교육","학습"]
-        ,["금융","경제"]
-        ,["스포츠","경기"]
-        ,["음식","식사","요리"]
-        ,["지리","지역","현장","영역","영토"]
-        ,["패션","옷","스타일"]
-        ,["집","주거","부동산"]
-        ,["자동차","오토바이","탈것","이동수단"]
-        ,["동물","짐승","생물"]
-        ,["음악","노래","뮤직"]]
+        our_topics = [
+        ["노하우"]
+        ,["게임"]
+        ,["교육", "학습"]
+        ,["금융", "주식"]
+        ,["스포츠", "체육"]
+        ,["요리", "식품"]
+        ,["기술", "컴퓨터"]
+        ,["패션", "의상"]
+        ,["자동차", "차"]
+        ,["동물", "곤충"]
+        ,["음악"]
+        ]
         usingmodel = w2vmodelko
     else:
-        our_topics = [["News","Announcement","Report","Broadcasting"]
-        ,["Health","Life"]
-        ,["knowhow","living"]
-        ,["Game","Play","Entertainment"]
-        ,["Education","Learning"]
-        ,["Finance","Economy"]
-        ,["sports","athletic"]
-        ,["food","dinner","cooking"]
-        ,["geography","region","field","area","territory"]
-        ,["Fashion","Cloth","Style"]
-        ,["House","Housing","Freety"]
-        ,["car","autobi","move","automobile"]
-        ,["Animal","beast","creature"]
-        ,["music","sing","playing","instrument"]]
+        our_topics = [["Know-how","Tip"]
+        ,["Game","Entertainment"]
+        ,["Education","IT","Tech","Programming"]
+        ,["Finance","Economy","Stock","Fund"]
+        ,["Sports","Athletic"]
+        ,["Food","Cook"]
+        ,["Fashion","Cloth"]
+        ,["Car","Vehicle","Drive"]
+        ,["Animal","Pet"]
+        ,["Music"]]
         usingmodel = w2vmodelen
 
     # 선정주제와 선별주제의 유사도의 합을 저장할 리스트 선언
@@ -268,6 +268,7 @@ while 1:
     # 유사한 주제군으로 분류한 리스트 합의 평균값과 그 최대값 구하기
     for i in range(len(our_topics)):
         avg_sum_similarity[i] = sum_sum_similarity[i] / len(our_topics[i])
+        #print(avg_sum_similarity[i], our_topics[i][0])
         if avg_sum_similarity[i] > max_sum_similarity:
             max_sum_similarity = avg_sum_similarity[i]
             # 유사한 주제군중 미리 선정한 리스트 0번째 자리의 주제로 대주제 선정
@@ -284,7 +285,7 @@ while 1:
 
     # 문장 전체 (단어종류 / 유사도)가 가장 높은 주제군의 값이 일정 값을 넘어가지않으면
     # 분류가 충분하지 않다고 생각되므로 기타-미분류로 분류
-    if len(tfidf.vocabulary_) / max_sum_similarity > 6:
+    if len(tfidf.vocabulary_) / max_sum_similarity > 100:
         top_topic = "기타"
         semi_topic = "미분류"
     # 그렇지 않으면 정상적으로 분류
@@ -307,4 +308,3 @@ while 1:
     # 현재시각 - 시작시간 = 실행 시간
     end = time.time()
     print("time :", end - start)
-
