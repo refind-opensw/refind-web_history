@@ -7,20 +7,16 @@ var io = socket_io()
 router.io = io
 
 let defaultCats = {
-  1: ["뉴스", "News"],
-  2: ["스포츠", "sports"],
-  3: ["게임", "Game"],
-  4: ["음악", "music"],
-  5: ["교육", "Education"],
-  6: ["노하우", "knowhow"],
-  7: ["건강", "Health"],
-  8: ["자동차", "car"],
-  9: ["금융", "Finance"],
-  10: ["음식", "food"],
-  11: ["지리", "geography"],
-  12: ["패션", "Fashion"],
-  13: ["집", "House"],
-  14: ["동물", "Animal"],
+  1: ["노하우", "Know-how"],
+  2: ["게임", "Game"],
+  3: ["교육", "기술", "Education"],
+  4: ["금융", "Finance"],
+  5: ["스포츠", "Sports"],
+  6: ["요리", "Food"],
+  7: ["패션", "Fashion"],
+  8: ["자동차", "Car"],
+  9: ["동물", "Animal"],
+  10: ["음악", "Music"],
 }
 
 const getMainCatNum = (dStr, cats) => {
@@ -31,9 +27,10 @@ const getMainCatNum = (dStr, cats) => {
   return result;
 }
 
+// 현재 서버 메모리 문제로 파이썬 쉘 실행은 하나로 제한
 let pyshell = [
   new PythonShell('pyscripts/categorize.py'),
-  new PythonShell('pyscripts/categorize.py')
+  //new PythonShell('pyscripts/categorize.py')
 ];
 
 const splter = "<!toArr@comd%^&splt^&%>";
@@ -58,7 +55,8 @@ router.io.on('connection', socket => {
 });
 
 // Send to client!!!
-for (let i = 0; i < pyshell.length; i++) {
+// 현재 서버 메모리 문제로 파이썬 쉘 실행은 하나로 제한
+for (let i = 0; i < 1; i++) {
   pyshell[i].on('message', res => {
     const f_tag = res.substring(0, 6);
     let comp = res.split(f_tag);

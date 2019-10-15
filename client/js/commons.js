@@ -8,39 +8,39 @@ let socket = io.connect(serverUrl);
 // 뉴스, 스포츠, 게임, 음악, 연예, 생활/노하우, 건강, 자동차, IT/기술, 기타
 const initCard = [
     {
-        title: "뉴스",
+        title: "노하우",
         catno: 1,
-        imgsrc: "img/ic_cat_news.png"
-    },
-    {
-        title: "스포츠",
-        catno: 2,
-        imgsrc: "img/ic_cat_sports.png"
-    },
-    {
-        title: "게임",
-        catno: 3,
-        imgsrc: "img/ic_cat_game.png"
-    },
-    {
-        title: "음악",
-        catno: 4,
-        imgsrc: "img/ic_cat_music.png"
-    },
-    {
-        title: "교육",
-        catno: 5,
-        imgsrc: "img/ic_cat_education.png"
-    },
-    {
-        title: "생활/노하우",
-        catno: 6,
         imgsrc: "img/ic_cat_knowhow.png"
     },
     {
-        title: "건강",
+        title: "게임",
+        catno: 2,
+        imgsrc: "img/ic_cat_game.png"
+    },
+    {
+        title: "교육/기술",
+        catno: 3,
+        imgsrc: "img/ic_cat_education.png"
+    },
+    {
+        title: "금융",
+        catno: 4,
+        imgsrc: "img/ic_cat_finance.png"
+    },
+    {
+        title: "스포츠",
+        catno: 5,
+        imgsrc: "img/ic_cat_sports.png"
+    },
+    {
+        title: "요리",
+        catno: 6,
+        imgsrc: "img/ic_cat_food.png"
+    },
+    {
+        title: "패션",
         catno: 7,
-        imgsrc: "img/ic_cat_health.png"
+        imgsrc: "img/ic_cat_fashion.png"
     },
     {
         title: "자동차",
@@ -48,34 +48,14 @@ const initCard = [
         imgsrc: "img/ic_cat_car.png"
     },
     {
-        title: "금융",
-        catno: 9,
-        imgsrc: "img/ic_cat_finance.png"
-    },
-    {
-        title: "음식",
-        catno: 10,
-        imgsrc: "img/ic_cat_food.png"
-    },
-    {
-        title: "지리",
-        catno: 11,
-        imgsrc: "img/ic_cat_geography.png"
-    },
-    {
-        title: "패션",
-        catno: 12,
-        imgsrc: "img/ic_cat_fashion.png"
-    },
-    {
-        title: "집",
-        catno: 13,
-        imgsrc: "img/ic_cat_house.png"
-    },
-    {
         title: "동물",
-        catno: 14,
+        catno: 9,
         imgsrc: "img/ic_cat_animal.png"
+    },
+    {
+        title: "음악",
+        catno: 10,
+        imgsrc: "img/ic_cat_music.png"
     },
     {
         title: "기타",
@@ -131,7 +111,8 @@ const categorize = {
                 new CoreCategorize(data[i], thread);
                 this._reqTimes++;
                 i++
-                thread++;
+                // 현재 메모리 부족 문제로 파이썬 쉘은 한개로 제한
+                //thread++;
             }, 10);
         });
         const checkSockError = setInterval(() => {
