@@ -3,7 +3,6 @@
 node_modules
 package.json
 package-lock.json
-semantic_ui
 server/.keep
 server/aclocal.m4
 server/AUTHORS
