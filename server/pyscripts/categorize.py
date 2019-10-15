@@ -15,6 +15,8 @@ import urllib
 from urllib import parse
 # url bodytext의 태그 제거를 도와주는 라이브러리
 from bs4 import BeautifulSoup
+# 동적 웹페이지 크롤링을 도와주는 라이브러리
+from selenium import webdriver
 # numpy array 자료형을 사용하기 위함
 import numpy as np
 # TfidfVectorizer를 사용하여 분류를 하기 위한 라이브러리
@@ -37,7 +39,17 @@ global n_top_words
 # from langdetect import detect_langs
 # from langdetect import detect
 
-# URL을 읽어서 BeacutifulSoup로 크롤링 가능하게 만들어주는 함수
+# 동적 크롤링을 위한 크롬 웹드라이버 옵션 초기화
+def initChromeWebdriverOption():
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('headless')
+    chrome_options.add_argument('window-size=800x480')
+    chrome_options.add_argument("disable-gpu")
+    chrome_options.add_argument('no-sandbox')
+    chrome_options.add_argument('disable-dev-shm-usage')
+    return chrome_options
+
+# URL을 읽어서 BeacutifulSoup로 정적 크롤링 가능하게 만들어주는 함수
 def readURLandParse(URL):
     # User-Agent 헤더를 설정해 웹 크롤링 권한을 높여준다.
     hdr = {'User-Agent': 'Mozilla/5.0' }
@@ -46,6 +58,12 @@ def readURLandParse(URL):
     html=response.read()
     #Beautifulsoup 함수로 뷰티플스프 처리된 html을 return
     return BeautifulSoup(html,'html.parser',from_encoding='utf-8')
+
+# 정적크롤링 불가능 시 동적크롤링을 진행하는 함수
+def dynamicURLcrawling(chromeDriver,URL):
+    chromeDriver.get(URL)
+    html = chromeDriver.page_source
+    return BeautifulSoup(html, 'html.parser',from_encoding='utf-8')
 
 # 영한 문서 구분 함수 한글이 30자 이상이면 한글문서로 구분하는 함수
 # https://frhyme.github.io/python-basic/korean_or_english/
@@ -58,7 +76,7 @@ def isEnglishOrKorean(input_s):
 
 # mecab, kss 이용 한글 형태소 분석하는 함수
 #https://konlpy-ko.readthedocs.io/ko/v0.4.3/api/konlpy.tag/
-def mecabFreqToDataFrame(text):
+def mecabFreqToSentenceList(text):
     # 리스트에 넣기전 자료형 초기화
     sentence_token = []
     allnoun = []
@@ -71,7 +89,7 @@ def mecabFreqToDataFrame(text):
     return allnoun
 
 # sent_tokenize, nltk 이용 한글 이외 자연어 분석하는 함수
-def elseFreqToDataFrame(text, stop):
+def elseFreqToSentenceList(text, stop):
     #리스트에 넣기전 자료형 초기화
     sentence_token = []
     clean_tokens = []
@@ -89,6 +107,39 @@ def elseFreqToDataFrame(text, stop):
         allnoun.append(" ".join([word for word,pos in tagged[i] if pos in ['NN','NNP']]))
     return allnoun
 
+# 형태소, 문장 분석을 위한 함수
+# 0번째 인자로 정제된 sentences(문장 리스트) 반환
+# 1번째 인자로 정제된 title(제목 단어 리스트) 반환
+# 2번째 인자로 무슨 언어인지 반환
+def makeRefinedWords(main_text,title_text):
+    # 한/영 문서 구분 함수의 결과를 whatlang 변수에 저장
+    whatlang = isEnglishOrKorean(main_text)
+
+    # 형태소를 문장단위 리스트로 변환해서 본문과 제목을 담을 리스트 선언
+    sentences=[]
+    title = []
+
+    # 한글 문서 형태소 변환
+    if whatlang=="k":
+        print ("한글문서입니다.")
+        # 문장 단위로 본문 형태소 분석
+        sentences = mecabFreqToSentenceList(main_text)
+        # 한글 제목 텍스트 분석
+        title=mecab.nouns(title_text)
+    # 한글 이외의 문서 형태소 변환
+    else:
+        print("그 밖입니다.")
+        # 불용어 설정
+        stop=set(stopwords.words('english'))
+        # 문장 단위로 본문 분석
+        sentences = elseFreqToSentenceList(main_text,stop)
+        # 영문 제목 텍스트 분석
+        title_tokens = [tok for tok in title_text.split()]
+        title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
+        title_tagged = nltk.pos_tag(title_clean_tokens)
+        title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
+    return [sentences, title , whatlang]
+
 # lda 이용 단어들을 문서랑 비교해 어느 단어가 주제로 적합한지 선정해주는 함수
 # https://pypi.org/project/lda/
 def makeTopicword_with_LDA(tfidf_bow):
@@ -104,6 +155,9 @@ splter = "<!toArr@comd%^&splt^&%>"
 
 # 모델 프리 로딩
 print("로오딩중!")
+
+# 동적크롤링 드라이버 초기화
+driver = webdriver.Chrome("/usr/bin/chromedriver",options = initChromeWebdriverOption())
 w2vmodelko = KeyedVectors.load_word2vec_format('ko.bin', binary=True)
 w2vmodelen = KeyedVectors.load_word2vec_format('en.bin', binary=True)
 # 한글 형태소 분류함수 초기화
@@ -112,6 +166,7 @@ mecab = Mecab("/usr/local/lib/mecab/dic/mecab-ko-dic/")
 tfidf = TfidfVectorizer()
 # lda시 행렬의 크기 전역 변수 조정
 n_top_words = 10
+
 print("로오딩완료!")
 
 # 모델 로딩이 끝난 후 방문기록들을 대량으로 불러오기위해 반복하는 반복문
@@ -139,14 +194,16 @@ while 1:
         try:
             cnt=cnt+1
             # URL을 읽어서 BeacutifulSoup 객체로 변환 후 반환
-            clean = readURLandParse(url)
+            cleanSoup = readURLandParse(url)
             # 제목만 뽑아서 title_text에 저장
-            title_text = clean.find('title').get_text()
+            title_text = cleanSoup.find('title').get_text()
             # 본문만 뽑아서 main_text변수에 저장
-            main_text = clean.find('body').get_text()
+            main_text = cleanSoup.find('body').get_text()
             break
         except Exception as e:
              print("에러가 발생했어요 : ",cnt, e)
+             # 0.5초 후 다시시도
+             time.sleep(0.5)
              pass
     # url 탐색 10번 재시도 할때까지 URL을 읽지 못했을때 에러 처리
     if cnt == 10:
@@ -155,43 +212,38 @@ while 1:
         semi_topic = "미분류"
         print("data: " + top_topic + splter + semi_topic + splter + obj)
         continue
-    
-    # 한/영 문서 구분 함수의 결과를 whatlang 변수에 저장
-    whatlang = isEnglishOrKorean(main_text)
 
-    # 형태소를 문장단위 리스트로 변환해서 본문과 제목을 담을 리스트 선언
-    sentences=[]
-    title = []
-
-    # 한글 문서 형태소 변환
-    if whatlang=="k":
-        print ("한글문서입니다.")
-        # 문장 단위로 본문 형태소 분석
-        sentences = mecabFreqToDataFrame(main_text)
-        # 한글 제목 텍스트 분석
-        title=mecab.nouns(title_text)
-    # 한글 이외의 문서 형태소 변환
-    else:
-        print("그 밖입니다.")
-        # 불용어 설정
-        stop=set(stopwords.words('english'))
-        # 문장 단위로 본문 분석
-        sentences = elseFreqToDataFrame(main_text,stop)
-        # 영문 제목 텍스트 분석
-        title_tokens = [tok for tok in title_text.split()]
-        title_clean_tokens = [tok for tok in title_tokens if len(tok.lower())>1 and (tok.lower() not in stop)]
-        title_tagged = nltk.pos_tag(title_clean_tokens)
-        title = [word for word,pos in title_tagged if pos in ['NN','NNP']]
-
-    # TF-IDF의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
     try :
-        tfidf_bow = tfidf.fit_transform(sentences).toarray()*100
+        # makeRefinedWords 함수로 리스트를 반환 받는다.
+        refinedWords = makeRefinedWords(main_text,title_text)
+        # TF-IDF의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
+        tfidf_bow = tfidf.fit_transform(refinedWords[0]).toarray()*100
+
     except :
-        print ("보안이 철저한 문서군요.")
-        top_topic = "기타"
-        semi_topic = "미분류"
-        print("data: " + top_topic + splter + semi_topic + splter + obj)
-        continue
+        try :
+            print ("동적크롤링 진행")
+            dynamicCleanSoup = dynamicURLcrawling(driver,url)
+
+            # 제목만 뽑아서 title_text에 저장
+            title_text = dynamicCleanSoup.find('title').get_text()
+
+            # 본문만 뽑아서 main_text변수에 저장
+            main_text = dynamicCleanSoup.find('body').get_text()
+
+            # makeRefinedWords 함수로 리스트를 반환 받는다.
+            refinedWords = makeRefinedWords(main_text,title_text)
+            
+            # TF-IDF의 배열엔 float값의 가중치가 들어가있으므로 정수값으로 변환해주기위해 100을 곱한다.
+            tfidf_bow = tfidf.fit_transform(refinedWords[0]).toarray()*100
+
+        except :
+            print ("동적크롤링 실패")
+            top_topic = "기타"
+            semi_topic = "미분류"
+            # 노드에 미분류값 전달
+            print("data: " + top_topic + splter + semi_topic + splter + obj)
+            pass
+            continue
 
     #TF-IDF에서 특장점이 가중치 높은 단어를 저장
     vocab = tfidf.get_feature_names()
@@ -202,10 +254,10 @@ while 1:
     # 토픽 체크용 디버그 출력
     for i, topic_dist in enumerate(topic_word):
         topic_words = np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words+1):-1]
-        # print('Topic {}: {}'.format(i, ' '.join(topic_words)))
+        #print('Topic {}: {}'.format(i, ' '.join(topic_words)))
 
     # 관리자가 직접 선정한 한/영 선정주제군 2차원 리스트 초기화
-    if whatlang == "k":
+    if refinedWords[2] == "k":
         our_topics = [
         ["노하우"]
         ,["게임"]
@@ -290,15 +342,15 @@ while 1:
         semi_topic = "미분류"
     # 그렇지 않으면 정상적으로 분류
     else:
-        for i in range(len(title)):
+        for i in range(len(refinedWords[1])):
             try:                
-                if semi_topic_similarity < usingmodel.wv.similarity(title[i], top_topic):
-                    semi_topic_similarity = usingmodel.wv.similarity(title[i], top_topic)
-                    semi_topic = title[i]
+                if semi_topic_similarity < usingmodel.wv.similarity(refinedWords[1][i], top_topic):
+                    semi_topic_similarity = usingmodel.wv.similarity(refinedWords[1][i], top_topic)
+                    semi_topic = refinedWords[1][i]
             # 제목에 있는 단어를 대조할 수 없을때 무시하는 예외처리
             except KeyError:
                 if i!=0:
-                    semi_topic = title[i-1]
+                    semi_topic = refinedWords[1][i-1]
                 pass
     # 간혹 정상적으로 분류가 되지 않았을때 아래 미분류로 처리
     if semi_topic == "":
